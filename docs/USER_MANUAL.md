@@ -1,7 +1,7 @@
 # rmcprofile-skill — User Manual
 
-Version 0.1.0. A Python toolkit, AI-agent skill and (from later releases)
-chapter notebooks and a course on Reverse Monte Carlo modelling of total
+Version 0.2.0. A Python toolkit, AI-agent skill, a clean-room teaching engine
+and (from later releases) chapter notebooks and a course on Reverse Monte Carlo modelling of total
 scattering data with [RMCProfile](https://rmcprofile.ornl.gov/).
 
 ## 1. What you need
@@ -40,10 +40,11 @@ Both scripts print one status line per step (`create-env : OK`, …) and a
 python scripts/verify_rmcprofile.py
 ```
 
-Five checks: imports; formats round trip; the Keen identity
+Seven checks: imports; formats round trip; the Keen identity
 G(r→0) = −(Σ c_i b_i)² for SF6 (−0.2759 barn); rock-salt shells and
-coordination; the package smoke test (`tutorial/ex_1` in a temp dir, a few
-seconds, χ²/dof 0.4201). Flags: `-q` / `--quiet`, `--home` (package
+coordination; the rmclite recovery selftest; the package smoke test
+(`tutorial/ex_1` in a temp dir, a few seconds, χ²/dof 0.4201); the package
+cross-check (our partials and G(r) against that run's own CSVs). Flags: `-q` / `--quiet`, `--home` (package
 directory instead of `RMCPROFILE_HOME`), `--minutes` (cap for the smoke
 test, default 3.0), `--version`. Exit 0 only when every check passes.
 
@@ -140,7 +141,60 @@ x, calc, expt = rt.read_csv_pair("sample_PDF1.csv")
 Definitions and citations: `references/method.md`. File layouts:
 `references/formats.md`.
 
-## 5. The manual builder
+## 5. The cross-check adapter: `scripts/upstream_adapter.py`
+
+```
+python scripts/upstream_adapter.py list
+python scripts/upstream_adapter.py crosscheck ex_1 --timeout 3 [--home DIR] [--workdir DIR] [--update-records]
+python scripts/upstream_adapter.py --selftest
+```
+
+`list` prints the eight shipped exercises (`ex_1`, `ex_2`, `ex_3`, `ex_4_5K`,
+`ex_4_293K`, `ex_6_xray`, `ex_6_neutron`, `ex_7`) with their staging recipes.
+`crosscheck` stages one of them in a scratch directory (`--workdir`, default
+a fresh temp dir): pristine inputs only, outputs removed, `.poly`/`.fs`/`.sf`
+kept, `ex_7`'s `TIME_LIMIT` cut to 5 minutes; runs the package (`--home` or
+`RMCPROFILE_HOME`, killed after `--timeout` minutes); then computes our
+partial g(r) and Keen G(r) for the resulting `.rmc6f` and reports the largest
+difference from the package's own `_PDFpartials.csv` and `_PDF1.csv`. The
+verdict compares them with `tests/records/crosscheck_v1.json`:
+`tolerance_partials` 1e-3 (the package computes in single precision; measured
+2.8e-4 on the tallest SF6 peak) and `tolerance_gofr` 1e-4 barn (measured
+3e-5). `--update-records` rewrites the measured maxima and the provenance
+line — use it only after a deliberate re-measurement. Common flags:
+`--outdir`, `--log-dir`, `-q` / `--quiet`, `--version`. Exit 0 within
+tolerance, 1 outside, 2 without a package.
+
+## 6. rmclite — the teaching engine: `scripts/rmclite.py`
+
+A clean-room Reverse Monte Carlo engine (`references/rmclite.md`) whose
+calculated functions equal RMCProfile's by construction. Common flags on
+every command: `--outdir`, `--log-dir`, `-q` / `--quiet`, `--rmax` (8.0),
+`--dr` (0.02), `--seed` (0); `--version`; `--selftest` (2×2×2 rock salt,
+2000 moves, χ² must fall by 80 %).
+
+```
+python scripts/rmclite.py synth truth.rmc6f --displace 0.05 --noise 0.0 --rmax 5 --outdir out
+python scripts/rmclite.py fit average.rmc6f --target out/truth_target_PDFpartials.csv --gofr out/truth_target_GofR.csv --moves 3000 --sigma 0.2 --min-dist "Na-Na:3.0,Na-Cl:2.2,Cl-Cl:3.0" --max-move 0.05 --print-every 500 --outdir out
+```
+
+- `synth`: writes the input's partials and G(r) as targets
+  (`<stem>_target_PDFpartials.csv`, `<stem>_target_GofR.csv`) and a copy of
+  the input with every atom displaced by a Gaussian of s.d. `--displace` Å
+  (`<stem>_displaced.rmc6f`); `--noise` adds Gaussian noise to each target.
+- `fit`: runs `--moves` moves from the input configuration against
+  `--target` (and `--gofr` if given) with σ = `--sigma`, closest-approach
+  limits from `--min-dist`, moves up to `--max-move` Å; prints χ² every
+  `--print-every` moves; writes `<stem>_fit.rmc6f`, `<stem>_fit.chi2`
+  (RMCProfile's `.chi2` header), `<stem>_fit_PDFpartials.csv`,
+  `<stem>_fit_GofR.csv`. The histogram grid is the target's.
+
+What to expect (measured, `references/rmclite.md` §5): from the average
+structure χ² falls by orders of magnitude within a few thousand moves; the
+fit reproduces the pair distribution, not the coordinates; unbroadened
+targets and random starting distortions converge poorly.
+
+## 7. The manual builder
 
 ```
 python docs/build_manual.py [--outdir DIR] [--no-pdf] [-v | --verbose]
@@ -149,7 +203,7 @@ python docs/build_manual.py [--outdir DIR] [--no-pdf] [-v | --verbose]
 Writes `USER_MANUAL.html` (pandoc if present, else a built-in converter)
 and, with pandoc and a LaTeX engine, `USER_MANUAL.pdf`.
 
-## 6. Troubleshooting
+## 8. Troubleshooting
 
 | Symptom | See |
 |---|---|
@@ -159,10 +213,11 @@ and, with pandoc and a LaTeX engine, `USER_MANUAL.pdf`.
 | WSL runs are much slower than Windows | CPU build vs CUDA build, and `/mnt/*` I/O — work in `/tmp` or `$HOME` |
 | `UnicodeEncodeError` on Windows | `PYTHONIOENCODING=utf-8` |
 | `rmax exceeds half the shortest cell edge` | enlarge the supercell |
+| an rmclite fit barely moves χ² | start from the average structure and broaden the target (`references/rmclite.md` §5) |
 
 More in `references/pitfalls.md`.
 
-## 7. Licence
+## 9. Licence
 
 Apache-2.0 (`LICENSE`, `NOTICE`). Independent of and not affiliated with
 the RMCProfile developers or their institutions. RMCProfile is distributed

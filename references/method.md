@@ -75,10 +75,13 @@ reads them, `run_rmcprofile` reports the last row.
   shortest cell edge or the function refuses. RMCProfile itself uses the same
   half-box limit (`r_max` = half the box), which is why `SUPERCELL` sizes in
   the exercises are chosen to reach the r range of the data.
-- **Histogram normalisation.** *g_ij* is histogrammed with bin centres at
-  (k + ½) dr; an ideal lattice distance can fall on a bin edge and split
-  between two bins, so tests look at the first non-zero bin and at the
-  shell integral (which is exact), not at the bin maximum.
+- **The r grid is RMCProfile's.** *g_ij* is tabulated at r_k = k·dr
+  (k ≥ 1) with bins centred on r_k, i.e. edges at (k ∓ ½)·dr — the
+  convention of `_PDFpartials.csv`. Measured on the package's smoke test
+  (2026-09-05): with this grid our partials agree to 2.8e-4 (the package's
+  single precision); with plain bin-centre labels they differ by up to 2.9 at
+  sharp peaks. `partial_gr(..., grid="centre")` keeps the other convention.
+  An ideal-lattice distance lands on a grid point and fills one bin exactly.
 - **Weights.** Neutron weights use bound coherent scattering lengths for the
   natural isotopic mixture; isotopically enriched samples (e.g. deuterated,
   `D`) must be entered as their own type. X-ray weights are Q-dependent form

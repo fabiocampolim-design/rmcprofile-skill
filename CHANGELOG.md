@@ -2,6 +2,17 @@
 
 All notable changes to rmcprofile-skill. Format: Keep a Changelog; versions: SemVer.
 
+## [0.2.0] — 2026-09-05
+
+### Added
+- `scripts/upstream_adapter.py`: stage any of the eight shipped exercises, run the package, compare our partials and Keen G(r) with its `_PDFpartials.csv` / `_PDF1.csv`; `list`, `crosscheck`, `--selftest`, `--update-records`; schema-1 records in `tests/records/crosscheck_v1.json` (tolerances 1e-3 / 1e-4, measured 2.8e-4 / 3e-5 on both builds).
+- `scripts/rmclite.py`: clean-room RMC engine — `Box`, incremental `Histogram` on RMCProfile's grid, `PartialTarget` / `TotalGTarget` / `FqTarget`, `ClosestApproach`, `DistanceWindow`, `BondPotential`, `RmcLite` with Metropolis acceptance and seeds, `synth` / `fit` CLI writing RMCProfile-layout files; `references/rmclite.md`.
+- `rmc_grid` and `partial_gr(..., grid="rmcprofile"|"centre")`; `pdf --grid`.
+- `verify_rmcprofile.py` checks 5 (rmclite recovery) and 7 (package cross-check); SKILL.md workflows 8–9.
+
+### Changed
+- `partial_gr` now defaults to RMCProfile's grid: r values are k·dr (0.02, 0.04, …) instead of bin centres, and `pdf` CSVs start at r = dr.
+
 ## [0.1.0] — 2026-09-05
 
 ### Added

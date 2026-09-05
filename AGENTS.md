@@ -25,8 +25,37 @@ log: version, argv, ok, checks, extras).
 
 `python scripts/verify_rmcprofile.py` — health check: `-q` / `--quiet`,
 `--home` (package directory), `--minutes` (smoke-test cap, 3.0), `--version`.
-Exit 0 only when every check passes; the package smoke test is `[SKIP]`
-without a package.
+Seven checks (imports, formats, Keen identity, rock-salt shells, rmclite
+recovery, package smoke test, package cross-check); exit 0 only when every
+check passes; the two package checks are `[SKIP]` without a package.
+
+`python scripts/upstream_adapter.py` — cross-check against the installed package.
+
+| Scope | Flags |
+|---|---|
+| global | `--version`, `--selftest` (cross-check our own `pdf` output against itself, exact), `--outdir`, `--log-dir`, `-q` / `--quiet` |
+| `list` | none — prints the eight exercises with their staging recipes |
+| `crosscheck` EXERCISE (`ex_1` … `ex_7`) | `--home` (package directory), `--workdir` (scratch dir, default a fresh temp dir), `--timeout` (minutes), `--update-records` (rewrite the measured maxima and provenance in `tests/records/crosscheck_v1.json`) |
+
+Exit 0 within tolerance, 1 outside, 2 without a package. Audit log
+`logs/upstream_adapter_<stamp>.json`. The records file (`schema` 1) holds
+per exercise `tolerance_partials`, `tolerance_gofr`, `measured`, `provenance`
+and an `rmclite` block; it stores our numbers, never the package's data.
+
+`python scripts/rmclite.py` — the teaching engine.
+
+| Scope | Flags |
+|---|---|
+| common (global and per subcommand) | `--outdir`, `--log-dir`, `-q` / `--quiet`, `--rmax` (8.0), `--dr` (0.02), `--seed` (0) |
+| global | `--version`, `--selftest` (2×2×2 rock salt, 2000 moves, χ² must fall by 80 %) |
+| `synth` FILE.rmc6f | `--displace` (0.15 Å Gaussian displacement of every atom), `--noise` (s.d. added to each target partial) |
+| `fit` FILE.rmc6f | `--target` (required, `_PDFpartials.csv` layout), `--gofr` (optional G(r) CSV), `--moves` (5000), `--sigma` (0.2), `--min-dist` (`"A-A:3.0,A-B:2.2"`), `--max-move` (0.05 Å), `--print-every` (0) |
+
+`synth` writes `<stem>_displaced.rmc6f`, `<stem>_target_PDFpartials.csv`,
+`<stem>_target_GofR.csv`; `fit` writes `<stem>_fit.rmc6f`, `<stem>_fit.chi2`,
+`<stem>_fit_PDFpartials.csv`, `<stem>_fit_GofR.csv`; audit log
+`logs/rmclite_<stamp>.json`. The `fit` histogram grid is taken from the target
+file (`--rmax`/`--dr` apply to `synth`).
 
 `python docs/build_manual.py` — `docs/USER_MANUAL.md` → HTML (+ PDF with
 pandoc): `--outdir`, `--no-pdf`, `-v` / `--verbose`.
@@ -44,14 +73,19 @@ Formats: `read_rmc6f`, `Rmc6f.write/cart/concentrations`, `read_dat`,
 `read_partials_csv`. Checker: `check_input_set(stem, dir) -> [Finding]`.
 Package: `find_package(home=None) -> Package|None`, `package_env(pkg)`,
 `run_rmcprofile(stem, dir, pkg, timeout_min=None) -> RunResult`.
-Analysis: `pair_labels`, `partial_gr`, `neutron_weights`, `total_gr`,
-`fq_from_gr`, `coordination`, `bond_angles`, `average_cell`, `NEUTRON_B`.
+Analysis: `pair_labels`, `rmc_grid`, `partial_gr(cfg, rmax, dr, grid)`, `neutron_weights`,
+`total_gr`, `fq_from_gr`, `coordination`, `bond_angles`, `average_cell`, `NEUTRON_B`.
+Adapter (`upstream_adapter`): `EXERCISES`, `stage_exercise`, `crosscheck_partials`,
+`crosscheck_gofr`, `run_and_crosscheck`, `load_records`, `save_records`, `within_tolerance`.
+Engine (`rmclite`): `Box`, `Histogram`, `PartialTarget`, `TotalGTarget`, `FqTarget`,
+`ClosestApproach`, `DistanceWindow`, `BondPotential`, `RmcLite`, `RunState`,
+`synth_targets`, `rms_displacement`, `parse_min_dist`, `KB_EV`.
 
 ## Tests and checks
 
 ```
 python -m pyflakes scripts tests docs          # must be silent
-python -m pytest tests -q                      # ~20 s; package-bound tests skip without RMCPROFILE_HOME
+python -m pytest tests -q                      # ~40 s; package-bound tests skip without RMCPROFILE_HOME
 python scripts/verify_rmcprofile.py
 python tests/conformance.py --repo .           # vendored publication checker
 ```

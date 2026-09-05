@@ -7,8 +7,11 @@ Checks, in order:
   2. formats round trip (the toolkit's --selftest checks, in a temp dir)
   3. Keen G(r->0) for SF6 = -(sum c_i b_i)^2 = -0.2759 barn
   4. rock-salt shells: partial g(r) first shells at a/2 and a/sqrt(2), 6 Cl around Na
-  5. package smoke test when RMCPROFILE_HOME (or --home) points at RMCProfile_package:
+  5. rmclite recovery: the teaching engine's selftest (2x2x2 rock salt, 2000 moves)
+  6. package smoke test when RMCPROFILE_HOME (or --home) points at RMCProfile_package:
      tutorial/ex_1 copied to a temp dir, run for at most --minutes; SKIP otherwise
+  7. package cross-check: our partials and G(r) versus the smoke test's own CSVs,
+     within the tolerances of tests/records/crosscheck_v1.json; SKIP without the package
 
 Usage:
     python scripts/verify_rmcprofile.py [-q] [--home PATH] [--minutes 3]
@@ -85,11 +88,17 @@ def main(argv=None):
     check("rock-salt shells", abs(p1 - 2.82) < 0.02 and abs(p2 - 3.988) < 0.02 and hist == {6: cfg.counts[0]},
           "Na-Cl %.2f, Na-Na %.3f, CN %s" % (p1, p2, hist))
 
+    import rmclite as rl
+    rl_checks = rl.selftest(tempfile.mkdtemp(prefix="rmclite-verify-"))
+    check("rmclite recovery", all(c["ok"] for c in rl_checks), rl_checks[0]["detail"])
+
     pkg = rt.find_package(args.home)
     if pkg is None:
         if not args.quiet:
             print("[SKIP] package smoke test - set RMCPROFILE_HOME to the RMCProfile_package directory")
+            print("[SKIP] package cross-check - needs the package")
     else:
+        import upstream_adapter as ua
         src = os.path.join(pkg.home, "tutorial", "ex_1")
         with tempfile.TemporaryDirectory() as tmp:
             work = os.path.join(tmp, "ex_1")
@@ -100,6 +109,15 @@ def main(argv=None):
             check("package smoke test", ok, "%s (%s build), rc=%s, %.0f s, %d outputs, chi2 %s"
                   % (pkg.home, pkg.platform, res.returncode if res else "n/a", res.seconds if res else 0,
                      len(res.outputs) if res else 0, res.final_chi2.get("chi2") if res and res.final_chi2 else "n/a"))
+            if ok:
+                parts = ua.crosscheck_partials(os.path.join(work, "rmcsf6_190k.rmc6f"), os.path.join(work, "rmcsf6_190k_PDFpartials.csv"))
+                gofr = ua.crosscheck_gofr(os.path.join(work, "rmcsf6_190k.rmc6f"), os.path.join(work, "rmcsf6_190k_PDF1.csv"))
+                tol = ua.load_records()["exercises"]["ex_1"]
+                check("package cross-check", max(parts.values()) <= tol["tolerance_partials"] and gofr <= tol["tolerance_gofr"],
+                      "partials max %.1e, G(r) max %.1e barn (tolerances %.0e / %.0e)"
+                      % (max(parts.values()), gofr, tol["tolerance_partials"], tol["tolerance_gofr"]))
+            else:
+                check("package cross-check", False, "smoke test did not run")
 
     print("verify_rmcprofile: %s" % ("ALL CHECKS PASSED" if all_ok else "FAILED"))
     return 0 if all_ok else 1

@@ -5,6 +5,7 @@ subcommand is documented in AGENTS.md and docs/USER_MANUAL.md; VERSION,
 CITATION and CHANGELOG agree; SKILL.md points at existing reference files."""
 
 import argparse
+import json
 import os
 import re
 import sys
@@ -41,7 +42,7 @@ def test_build_manual_writes_html_without_pandoc(tmp_path, monkeypatch):
     assert "RMCPROFILE_HOME" in out
 
 
-@pytest.mark.parametrize("module", ["rmcprofile_tools", "verify_rmcprofile", "build_manual"])
+@pytest.mark.parametrize("module", ["rmcprofile_tools", "verify_rmcprofile", "build_manual", "upstream_adapter", "rmclite"])
 def test_script_flags_and_subcommands_are_documented(module):
     mod = __import__(module)
     agents, manual = _read("AGENTS.md"), _read("docs", "USER_MANUAL.md")
@@ -50,16 +51,19 @@ def test_script_flags_and_subcommands_are_documented(module):
         assert f in manual, "%s: %s missing from docs/USER_MANUAL.md" % (module, f)
 
 
-def test_flag_choices_are_documented():
-    import rmcprofile_tools as rt
+@pytest.mark.parametrize("module", ["rmcprofile_tools", "upstream_adapter", "rmclite"])
+def test_flag_choices_are_documented(module):
+    mod = __import__(module)
     agents, manual = _read("AGENTS.md"), _read("docs", "USER_MANUAL.md")
-    for a in rt.build_parser()._actions:
+    parsers = [mod.build_parser()]
+    for a in parsers[0]._actions:
         if isinstance(a, argparse._SubParsersAction):
-            for sp in a.choices.values():
-                for b in sp._actions:
-                    if b.choices and b.option_strings:
-                        expected = "`%s {%s}`" % (b.option_strings[-1], ",".join(b.choices))
-                        assert expected in agents and expected in manual, expected
+            parsers.extend(a.choices.values())
+    for sp in parsers:
+        for b in sp._actions:
+            if b.choices and b.option_strings:
+                expected = "`%s {%s}`" % (b.option_strings[-1], ",".join(b.choices))
+                assert expected in agents and expected in manual, "%s: %s" % (module, expected)
 
 
 def test_version_citation_changelog_agree():
@@ -76,7 +80,7 @@ def test_skill_md_references_exist_and_workflows_present():
     assert refs, "SKILL.md names no reference file"
     for ref in refs:
         assert os.path.isfile(os.path.join(ROOT, "references", ref)), ref
-    for n in range(1, 8):
+    for n in range(1, 10):
         assert "## %d." % n in skill, "workflow %d missing" % n
 
 
@@ -89,6 +93,12 @@ def test_checker_codes_are_documented():
     for c in codes:
         assert "`%s`" % c in manual, "%s missing from docs/USER_MANUAL.md" % c
         assert "`%s`" % c in skill, "%s missing from SKILL.md" % c
+
+
+def test_records_file_is_documented_and_valid():
+    rec = json.loads(_read("tests", "records", "crosscheck_v1.json"))
+    assert rec["schema"] == 1 and "ex_1" in rec["exercises"] and "rmclite" in rec
+    assert "crosscheck_v1.json" in _read("AGENTS.md") and "crosscheck_v1.json" in _read("docs", "USER_MANUAL.md")
 
 
 def test_readme_is_the_product_page():

@@ -21,8 +21,13 @@ Everything here that does not need the binary works without it.
   in barn, F(Q), coordination numbers, bond-angle distributions, the average
   cell — validated on exact geometry and on the identity
   G(r→0) = −(Σ c_i b_i)² that the package's own SF6 data reproduces.
-- **Teach** (next releases): a clean-room RMC engine for the chapters, the
-  chapters themselves (one per data type the program fits) and a course.
+- **Cross-check** itself against the installed package: stage any shipped
+  exercise, run it, and compare our partials and G(r) with RMCProfile's own
+  CSVs to recorded tolerances.
+- **Teach** with `rmclite`, a clean-room Reverse Monte Carlo engine whose
+  calculated functions equal RMCProfile's by construction: moves, χ² terms,
+  constraints, a bond potential, Metropolis acceptance — small enough to read.
+  The chapters (one per data type the program fits) and the course follow.
 
 ## Install
 
@@ -45,11 +50,14 @@ python scripts/rmcprofile_tools.py run    sf6 --dir runs/sf6 --timeout 10
 python scripts/rmcprofile_tools.py pdf    runs/sf6/sf6.rmc6f --rmax 8 --outdir out
 python scripts/rmcprofile_tools.py coord  runs/sf6/sf6.rmc6f --pair S F --rmax 2.0
 python scripts/rmcprofile_tools.py angles runs/sf6/sf6.rmc6f --triplet S F F --rmax 2.0
+python scripts/upstream_adapter.py crosscheck ex_1 --timeout 3            # our partials vs the package's, to tolerance
+python scripts/rmclite.py synth truth.rmc6f --displace 0.05 --rmax 5 --outdir out
+python scripts/rmclite.py fit average.rmc6f --target out/truth_target_PDFpartials.csv --moves 3000 --outdir out
 ```
 
 ## What is verified
 
-- Suite of 101 checks (`python -m pytest tests -q`), pyflakes clean; the
+- Suite of 146 checks (`python -m pytest tests -q`), pyflakes clean; the
   package-bound tests (real smoke test, layout) skip without
   `RMCPROFILE_HOME` and pass with either build.
 - Both 6.7.9 builds installed and every shipped tutorial exercise run from
@@ -59,15 +67,22 @@ python scripts/rmcprofile_tools.py angles runs/sf6/sf6.rmc6f --triplet S F F --r
   2–6 s.
 - The Keen identity for SF6: our neutron weights give G(0) = −0.2759 barn,
   the value at which the package's own G(r) data file starts.
+- On RMCProfile's r grid (r_k = k·dr, bins centred on r_k) our partials equal
+  the package's `_PDFpartials.csv` to 2.8e-4 (its single precision) and our
+  G(r) its `PDF1 (RMC)` column to 3e-5 barn, on both builds — the cross-check
+  adapter asserts this against `tests/records/crosscheck_v1.json`.
+- `rmclite`: incremental histograms bit-equal to a rebuild, constraints never
+  violated, seeds reproduce, a harmonic bond thermalises to 0.78 k_BT/k, and a
+  fit from the average structure cuts χ² by four orders of magnitude while
+  reproducing the pair distribution rather than the coordinates.
 - Formats round-trip on synthetic fixtures and were corrected against the
   real files the package writes (see `references/pitfalls.md`).
 
 ## Roadmap
 
-`rmclite` (a clean-room teaching engine written from McGreevy–Pusztai 1988
-and Tucker 2007), cross-check records against the installed package,
 X-ray weights and EXAFS parsing, chapter notebooks for every data type,
-the course, the weekly upstream watch.
+the course, the weekly upstream watch, more exercises in the cross-check
+records.
 
 ## Licence
 

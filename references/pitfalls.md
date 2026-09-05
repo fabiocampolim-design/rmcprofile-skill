@@ -87,12 +87,33 @@ RMCProfile 6.7.9 Windows Serial and Linux 64 builds).
 
 ## The analysis routines
 
+- **The r grid.** RMCProfile's partials sit at r_k = k·dr with bins centred
+  on r_k. Labelling bins by their centre (k + ½)·dr looked right and was off
+  by up to 2.9 at the SF6 S–F peak; on the correct grid the difference is
+  2.8e-4 (single precision in the package). `rmc_grid`, `partial_gr(grid=)`.
+
 - **`rmax` must be below half the shortest cell edge** (minimum image);
   `partial_gr` refuses otherwise. Build a bigger supercell instead.
 - **Ideal-lattice distances can sit on a histogram bin edge** and split
   between two bins; the shell *integral* is exact, the bin *maximum* is not.
 - **Neutron weights are for natural abundance.** Enter deuterium as `D`,
   and any enriched isotope as its own type with its own `b`.
+
+## rmclite
+
+- **Like and unlike pairs count differently.** Summing every atom's distance
+  row sees each pair twice; `partial_gr`'s full block sees an unlike pair once
+  and a like pair twice. `Histogram._factor` (2 for like, 1 for unlike) is
+  what makes the incremental update bit-equal to a rebuild.
+- **Distance-window members are fixed at first use** from the starting
+  configuration; changing the configuration afterwards without a new
+  `DistanceWindow` keeps the old membership.
+- **`fit` takes its grid from the target file**, not from `--rmax`/`--dr`.
+- **Unbroadened targets and random starting distortions converge poorly**
+  (`references/rmclite.md` §5): synthesise targets from a thermally
+  displaced box and start from the average structure.
+- **One move per distance row**: ~1 900 moves/s for 64 atoms; a 2 000-atom
+  box is minutes, not seconds — fine for a chapter, not for production.
 
 ## Building on Windows
 

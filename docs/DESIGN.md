@@ -46,21 +46,31 @@ together with a small clean-room RMC engine for teaching.
    the environment each setup script establishes is reproduced by
    `package_env()`. Deterministic passes agree to the printed precision;
    refinements differ by build (CUDA vs CPU move rate) and by seed.
-7. **Docs are guarded by the suite.** Every CLI flag and subcommand must be
+7. **rmclite computes RMCProfile's functions by construction.** The teaching
+   engine reuses the toolkit's grid and normalisation, so what it fits is
+   exactly what the package tabulates; the package-bound test proves it on
+   the shipped configuration. Its validations are honest about what RMC
+   does: it reproduces the pair distribution, not the coordinates.
+8. **Cross-check records are ours.** `tests/records/crosscheck_v1.json`
+   stores tolerances, our measured maxima and a provenance line per
+   exercise — never the package's data — so a regression in our histogram
+   or weights is caught against a number that was actually measured on
+   both builds.
+9. **Docs are guarded by the suite.** Every CLI flag and subcommand must be
    in `AGENTS.md` and the manual; version strings must agree across
    `VERSION`, `CITATION.cff`, `CHANGELOG.md`, `SKILL.md`.
 
-## What was deliberately left out of 0.1.0
+## What was deliberately left out of 0.2.0
 
 X-ray form-factor weights, EXAFS χ(k) parsing, `.bvs`/`.bonds`/`.triplets`
 readers, CIF/XYZ export and unit-cell fold-back (they arrive with the
-chapters that use them); the teaching engine `rmclite` and the
-cross-check adapter against the installed package (next release); the
-weekly upstream watch script.
+chapters that use them); an F(Q) cross-check (RMCProfile convolves F(Q)
+with the box function); the `rmc_tools` parser comparison (its conda
+package ships Python 3.7 builds only); the weekly upstream watch script.
 
 ## Verified with
 
-Suite of 101 checks (pytest; package-bound ones skip without
+Suite of 146 checks (pytest; package-bound ones skip without
 `RMCPROFILE_HOME`), pyflakes clean, `verify_rmcprofile.py` on the Windows
 build and, through a Linux venv, on the WSL build; the S1 audit log of every
 shipped exercise on both builds lives in the study repository.

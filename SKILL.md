@@ -4,13 +4,15 @@ description: Set up, check, run and analyse RMCProfile 6.7.9 refinements of neut
 license: Apache-2.0
 ---
 
-# rmcprofile-skill 0.1.0
+# rmcprofile-skill 0.2.0
 
 A Python toolkit around RMCProfile, the Reverse Monte Carlo program for total
 scattering (rmcprofile.ornl.gov). It reads and writes every input and output
 format of version 6.7.9 (`references/formats.md`), checks an input set for the
 mistakes the manual warns about, runs the binary the user installed, and
-analyses configurations on its own (`references/method.md`). RMCProfile is
+analyses configurations on its own (`references/method.md`), cross-checks itself
+against the installed package (`scripts/upstream_adapter.py`) and carries a small
+clean-room RMC engine for teaching (`scripts/rmclite.py`, `references/rmclite.md`). RMCProfile is
 closed-source and distributed under its own "non-profit purposes" terms; this
 skill never ships or copies it — it finds it through `RMCPROFILE_HOME`
 (`references/package.md`). Read `references/pitfalls.md` before touching a run
@@ -113,5 +115,42 @@ shortest supercell edge.
 
 `references/pitfalls.md`: the `.poly` wait, exit code 0 on a fatal error,
 `.his6f` precedence, stale neighbour files, the CUDA-versus-CPU move rate,
-`/mnt/*` slowness under WSL, the two `.rmc6f` atom-line layouts, CRLF, bin
-edges, natural-abundance weights, cp1252 consoles.
+`/mnt/*` slowness under WSL, the two `.rmc6f` atom-line layouts, CRLF, the
+r-grid convention, natural-abundance weights, cp1252 consoles.
+
+## 8. Cross-check against the installed package
+
+```bash
+python scripts/upstream_adapter.py list                      # the eight shipped exercises and their staging recipes
+python scripts/upstream_adapter.py crosscheck ex_1 --timeout 3
+```
+
+`crosscheck` stages the exercise's pristine inputs in a scratch directory
+(outputs removed, `.poly`/`.fs`/`.sf` kept, `ex_7`'s `TIME_LIMIT` cut to 5 min),
+runs the package, then compares our partials and Keen G(r) for the resulting
+`.rmc6f` with the package's own `_PDFpartials.csv` and `_PDF1.csv`. "within
+tolerance: True" means every pair is within `tolerance_partials` (1e-3; the
+package computes in single precision, measured 2.8e-4 on the g = 20 peak) and
+G(r) within `tolerance_gofr` (1e-4 barn, measured 3e-5) of
+`tests/records/crosscheck_v1.json`. `--update-records` rewrites the measured
+maxima and provenance — only after a deliberate re-measurement. In Python:
+`crosscheck_partials(rmc6f, partials_csv)`, `crosscheck_gofr(rmc6f, pdf_csv)`,
+`stage_exercise`, `run_and_crosscheck`.
+
+## 9. Teach with rmclite
+
+```bash
+python scripts/rmclite.py synth truth.rmc6f --displace 0.05 --rmax 5 --outdir out     # targets of truth + a displaced copy
+python scripts/rmclite.py fit   average.rmc6f --target out/truth_target_PDFpartials.csv --moves 3000 --sigma 0.2 --min-dist "Na-Na:3.0,Na-Cl:2.2,Cl-Cl:3.0" --outdir out
+```
+
+`fit` writes `<stem>_fit.rmc6f`, `<stem>_fit.chi2` (RMCProfile's header
+`m_accepted m_generated m_tested chi2`), `<stem>_fit_PDFpartials.csv` and
+`<stem>_fit_GofR.csv` — read them with the same readers as RMCProfile's
+output. The acceptance rule is Δ = Δχ²/2 + ΔU/k_BT, accept if Δ ≤ 0 else
+with probability e^(−Δ). Start from the average structure, never from a
+random distortion; never fit unbroadened (delta-sharp) targets; expect the
+pair distribution to be reproduced, not the coordinates
+(`references/rmclite.md` §5). In Python: `Box.from_rmc6f`, `Histogram`,
+`PartialTarget`, `TotalGTarget`, `FqTarget`, `ClosestApproach`,
+`DistanceWindow`, `BondPotential`, `RmcLite(...).run(n)`, `synth_targets`.
