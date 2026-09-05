@@ -45,7 +45,7 @@ def test_build_manual_writes_html_without_pandoc(tmp_path, monkeypatch):
 
 
 @pytest.mark.parametrize("module", ["rmcprofile_tools", "verify_rmcprofile", "build_manual", "upstream_adapter", "rmclite",
-                                    "assemble", "execute", "gallery", "extract_figures", "build_deck", "make_slides_pdf",
+                                    "watch_upstream", "assemble", "execute", "gallery", "extract_figures", "build_deck", "make_slides_pdf",
                                     "verify_deck", "make_handout", "build_pptx"])
 def test_script_flags_and_subcommands_are_documented(module):
     mod = __import__(module)

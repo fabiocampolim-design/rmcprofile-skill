@@ -4,7 +4,7 @@ description: Set up, check, run and analyse RMCProfile 6.7.9 refinements of neut
 license: Apache-2.0
 ---
 
-# rmcprofile-skill 0.4.0
+# rmcprofile-skill 0.5.0
 
 A Python toolkit around RMCProfile, the Reverse Monte Carlo program for total
 scattering (rmcprofile.ornl.gov). It reads and writes every input and output
@@ -189,3 +189,17 @@ python course/tools/build_deck.py           # index.html, handout, notes (--chec
 python course/tools/make_slides_pdf.py      # slides.pdf (Playwright; committed)
 python -m pytest tests/test_course.py -q
 ```
+
+## 12. Watch upstream weekly
+
+```bash
+python scripts/watch_upstream.py --weekly          # SourceForge listing, site pages/posts, conda tools, GitHub neighbours, tracker status
+python scripts/watch_upstream.py --snapshot        # record the state without a report
+powershell -File scripts/register_watch_task.ps1   # Windows Task Scheduler, Mondays 08:00 (-DryRun, -Remove)
+```
+
+Reports go to `<study>/docs/watch/YYYY-WW.md`, the snapshot and audit logs to
+`<study>/forum/upstream-watch/` (gitignored). A feed that does not answer is a
+row in the report and exit 1; read the report before trusting a silent week.
+The first run (2026-W36) found a 6.8.0-rc.1 candidate on SourceForge that the
+site's download page did not list.

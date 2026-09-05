@@ -1,6 +1,6 @@
 # rmcprofile-skill — User Manual
 
-Version 0.4.0. A Python toolkit, AI-agent skill, a clean-room teaching engine
+Version 0.5.0. A Python toolkit, AI-agent skill, a clean-room teaching engine
 and (from later releases) chapter notebooks and a course on Reverse Monte Carlo modelling of total
 scattering data with [RMCProfile](https://rmcprofile.ornl.gov/).
 
@@ -223,7 +223,23 @@ The notebooks are generated — edit `build/part*.py`, never the `.ipynb`:
 executed without errors or `[FAIL]`, matches the pinned totals and leaks no
 local path.
 
-## 9. The course: `course/`
+## 9. The weekly upstream watch: `scripts/watch_upstream.py`
+
+RMCProfile's source host is closed to outside networks, so the watch reads the
+public listings: the SourceForge file feed, the site's pages and posts through
+its WordPress API (modification dates), the GPL tools on the conda channel, seven
+neighbouring GitHub projects, and the HTTP status of the issue tracker.
+
+| Command | Flags |
+|---|---|
+| `python scripts/watch_upstream.py --weekly` — compare with the previous snapshot, write `<study>/docs/watch/YYYY-WW.md` (a re-run in the same week appends), snapshot | `--snapshot` (state only), `--state-dir DIR`, `--outdir DIR`, `--log-dir DIR`, `--timeout SECONDS`, `-q` / `--quiet`, `--version` |
+| `powershell -File scripts/register_watch_task.ps1` — Windows Task Scheduler job, Mondays 08:00 | `-Python PATH`, `-Day NAME`, `-At HH:mm`, `-Remove`, `-DryRun`, `-Version` |
+
+Exit codes: 0 ok, 1 a feed was unreachable (its row says so; the others are
+reported; that feed's previous snapshot is kept), 2 usage. Every run writes an
+audit log under `<state-dir>/logs/`, on failure too.
+
+## 10. The course: `course/`
 
 Eleven lectures on the book — `course/deck/index.html` (reveal.js, offline),
 `course/slides.pdf` (the same deck, one page per slide), `course/handout/handout.html`
@@ -243,7 +259,7 @@ and the presenting keys.
 Optional tooling: `pip install -r course/tools/requirements.txt` then
 `python -m playwright install chromium`.
 
-## 10. Troubleshooting
+## 11. Troubleshooting
 
 | Symptom | See |
 |---|---|
@@ -257,7 +273,7 @@ Optional tooling: `pip install -r course/tools/requirements.txt` then
 
 More in `references/pitfalls.md`.
 
-## 11. Licence
+## 12. Licence
 
 Apache-2.0 (`LICENSE`, `NOTICE`). Independent of and not affiliated with
 the RMCProfile developers or their institutions. RMCProfile is distributed

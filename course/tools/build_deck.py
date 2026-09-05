@@ -31,7 +31,7 @@ import os
 import re
 import sys
 
-__version__ = "0.4.0"
+__version__ = "0.5.0"
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 COURSE = os.path.abspath(os.path.join(HERE, ".."))

@@ -72,6 +72,12 @@ PASS/FAIL without executing), `-v`, `-q`; the tally goes to
 `logs/execute.log`. `python build/gallery.py` writes `docs/figures/*.png` and
 the README gallery block — `--check` (exit 1 if the block is stale).
 
+`python scripts/watch_upstream.py` (rule 23, weekly upstream watch) — `--weekly`,
+`--snapshot`, `--state-dir DIR` (default `<study>/forum/upstream-watch`), `--outdir DIR`
+(default `<study>/docs/watch`), `--log-dir DIR`, `--timeout SECONDS`, `-q` / `--quiet`,
+`--version`. Exit 0 ok, 1 a feed unreachable (report still written), 2 usage.
+`scripts/register_watch_task.ps1` — `-Python`, `-Day`, `-At`, `-Remove`, `-DryRun`, `-Version`.
+
 The course (`course/`, rule 22): `python course/tools/extract_figures.py` —
 `--notebook IPYNB [IPYNB ...]`, `--outdir DIR`, `--check`, `-q` / `--quiet`,
 `--version`; `python course/tools/build_deck.py` — `--content FILE`, `--check`,

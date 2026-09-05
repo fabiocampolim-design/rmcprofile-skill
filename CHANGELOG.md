@@ -2,6 +2,12 @@
 
 All notable changes to rmcprofile-skill. Format: Keep a Changelog; versions: SemVer.
 
+## [0.5.0] — 2026-09-05
+
+### Added
+- `scripts/watch_upstream.py` (playbook rule 23): the weekly upstream watch over the public surfaces — SourceForge file listing (RSS), every page and post of rmcprofile.ornl.gov (WordPress REST API, modification dates), the three GPL tools on the conda channel `apw247`, seven neighbouring GitHub projects, and the HTTP status of the issue tracker; `--weekly` writes `<study>/docs/watch/YYYY-WW.md` (a re-run in the same week appends), `--snapshot`, per-feed failure rows with exit 1, an audit log per run. `scripts/register_watch_task.ps1` registers the Windows Task Scheduler job (Mondays 08:00, console to a log). `tests/test_watch_upstream.py` fakes the three network seams.
+- Study documents (not in the product): `docs/01` website survey, `docs/05` GPL tools audit with the `rmc_tools` parser comparison (agrees on all shipped configurations; P-19 crash on boxes under 100 atoms), `docs/06` literature run, `docs/07` ecosystem; drafts B-1, B-4, B-5.
+
 ## [0.4.0] — 2026-09-05
 
 ### Added

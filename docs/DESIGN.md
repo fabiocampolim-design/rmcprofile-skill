@@ -83,14 +83,25 @@ together with a small clean-room RMC engine for teaching.
    correction forms, the X-ray correlation) — the course cannot claim more
    than the book verified.
 
-## What was deliberately left out of 0.4.0
+12. **The watch reads listings, never scrapes pages.** RMCProfile's source
+   host is closed to this network, so the weekly watch uses the documented
+   surfaces: the SourceForge RSS, the site's own WordPress API (which gives
+   modification dates, so no HTML hashing), anaconda.org's JSON, GitHub's
+   REST, and the tracker's HTTP status as a single number whose change
+   means the door opened. One feed failing is a row in the report and exit
+   1, not a lost week; a second run in the same week appends rather than
+   overwrites; the previous snapshot of a feed that did not answer is kept
+   so a transient failure does not turn next week's listing into "new".
+
+## What was deliberately left out of 0.5.0
 
 EXAFS χ(k) computation and magnetic / diffuse-scattering models (chapter 8
 runs the shipped EXAFS exercise and documents the other two); `.bvs`,
 `.bonds`, `.triplets` readers; an F(Q) cross-check (RMCProfile convolves
 F(Q) with the box function) and the X-ray F(Q) processing (finding N-8);
-the `rmc_tools` parser comparison (its conda package ships Python 3.7
-builds only); the weekly upstream watch script (next release).
+a modernised `rmc_tools` (its conda package ships Python 3.7 builds only;
+the comparison is done, the patch waits for the maintainers' word); a run of
+the 6.8.0-rc.1 candidate the first watch found on SourceForge (next release).
 
 ## Verified with
 

@@ -108,8 +108,8 @@ slide was printed by a chapter cell.
 
 ## Roadmap
 
-The weekly upstream watch, more exercises in the cross-check records,
-EXAFS χ(k) parsing, an F(Q) cross-check.
+The 6.8.0 release candidate through the cross-check, more exercises in the
+cross-check records, EXAFS χ(k) parsing, an F(Q) cross-check.
 
 ## Licence
 
