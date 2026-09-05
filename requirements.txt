@@ -10,3 +10,4 @@ ipykernel
 nbconvert>=7
 pytest>=7
 pyflakes
+periodictable        # Cromer-Mann X-ray form factors (chapter 5, xray_form_factor); BSD

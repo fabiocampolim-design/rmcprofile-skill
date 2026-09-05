@@ -1016,3 +1016,255 @@ def main(argv=None):
 
 if __name__ == "__main__":
     sys.exit(main())
+
+
+# ----------------------------------------------------------------------------
+# building, folding and exporting configurations  (manual §2.16, §4.11)
+# ----------------------------------------------------------------------------
+def lattice_from_cell(cell):
+    """Row vectors (Å) of a general (a, b, c, alpha, beta, gamma) cell, a along x, b in the xy plane."""
+    a, b, c, al, be, ga = cell
+    al, be, ga = np.radians([al, be, ga])
+    va = np.array([a, 0.0, 0.0])
+    vb = np.array([b * np.cos(ga), b * np.sin(ga), 0.0])
+    cx = c * np.cos(be)
+    cy = c * (np.cos(al) - np.cos(be) * np.cos(ga)) / np.sin(ga)
+    cz = np.sqrt(max(c * c - cx * cx - cy * cy, 0.0))
+    return np.array([va, vb, [cx, cy, cz]])
+
+
+def build_configuration(cell, sites, supercell, title="built by rmcprofile-skill"):
+    """A supercell configuration from a unit cell.
+
+    cell = (a, b, c, alpha, beta, gamma); sites = [(label, x, y, z), ...] fractional in the unit
+    cell (one entry per atom of the cell, any order); supercell = (na, nb, nc). Atoms are
+    ordered by type (the order of first appearance in `sites`), then by cell, then by site —
+    the order RMCProfile's 'ATOMS ::' line and the partials expect."""
+    na, nb, nc = supercell
+    types = []
+    for lab, *_ in sites:
+        if lab not in types:
+            types.append(lab)
+    atoms, frac, site_no, cellidx = [], [], [], []
+    for t in types:
+        for i, j, k in np.ndindex(na, nb, nc):
+            for s, (lab, x, y, z) in enumerate(sites):
+                if lab == t:
+                    atoms.append(lab)
+                    frac.append([(x + i) / na, (y + j) / nb, (z + k) / nc])
+                    site_no.append(s + 1)
+                    cellidx.append([i, j, k])
+    lat = lattice_from_cell(cell)
+    big = lat * np.array([[na], [nb], [nc]])
+    N = len(atoms)
+    cfg = Rmc6f(header={"Metadata title": title}, atom_types=types, counts=[atoms.count(t) for t in types],
+                cell=(cell[0] * na, cell[1] * nb, cell[2] * nc, cell[3], cell[4], cell[5]),
+                lattice=big, supercell=(na, nb, nc), density=N / abs(np.linalg.det(big)),
+                atoms=np.array(atoms, dtype=object), frac=np.array(frac, float) % 1.0,
+                site=np.array(site_no, int), cellidx=np.array(cellidx, int))
+    return cfg
+
+
+def fold_to_unit_cell(cfg):
+    """Fractional coordinates of every atom inside its unit cell and the cell it came from,
+    using the supercell dimensions of the header."""
+    n = np.array(cfg.supercell, float)
+    scaled = (cfg.frac % 1.0) * n
+    idx = np.floor(scaled + 1e-9).astype(int) % np.array(cfg.supercell)
+    frac_cell = (scaled - idx) % 1.0
+    return frac_cell, idx
+
+
+def export_xyz(cfg, path, comment=None):
+    xyz = cfg.cart()
+    with open(path, "w", encoding="utf-8", newline="\n") as f:
+        f.write("%d\n%s\n" % (cfg.n_atoms(), comment or "rmcprofile-skill export (Angstrom)"))
+        for lab, (x, y, z) in zip(cfg.atoms, xyz):
+            f.write("%-3s %12.6f %12.6f %12.6f\n" % (lab, x, y, z))
+
+
+def export_cif(cfg, path, name="rmcprofile_skill_box"):
+    """P1 CIF of the whole supercell (every atom explicit)."""
+    a, b, c, al, be, ga = cfg.cell
+    lines = ["data_%s" % name, "_symmetry_space_group_name_H-M   'P 1'", "_symmetry_Int_Tables_number   1",
+             "_cell_length_a   %.6f" % a, "_cell_length_b   %.6f" % b, "_cell_length_c   %.6f" % c,
+             "_cell_angle_alpha   %.4f" % al, "_cell_angle_beta   %.4f" % be, "_cell_angle_gamma   %.4f" % ga,
+             "loop_", "_atom_site_label", "_atom_site_type_symbol", "_atom_site_fract_x", "_atom_site_fract_y",
+             "_atom_site_fract_z"]
+    for i, (lab, (x, y, z)) in enumerate(zip(cfg.atoms, cfg.frac)):
+        lines.append("%s%d %s %.6f %.6f %.6f" % (lab, i + 1, lab, x, y, z))
+    with open(path, "w", encoding="utf-8", newline="\n") as f:
+        f.write("\n".join(lines) + "\n")
+
+
+# ----------------------------------------------------------------------------
+# Faber-Ziman partials, X-ray form factors and weights  (manual §4.3, App. D)
+# ----------------------------------------------------------------------------
+def faber_ziman_sq(r, g, density, q):
+    """S_ij(Q) - 1 = 4 pi rho0 int r^2 (g_ij(r) - 1) sin(Qr)/(Qr) dr."""
+    r = np.asarray(r, float)
+    g = np.asarray(g, float)
+    q = np.asarray(q, float)
+    dr = np.diff(r).mean()
+    qr = np.outer(q, r)
+    safe = np.where(qr == 0, 1.0, qr)
+    kernel = np.where(qr == 0, 1.0, np.sin(qr) / safe)
+    return 4 * np.pi * density * (kernel * (r ** 2 * (g - 1.0) * dr)).sum(axis=1)
+
+
+def xray_form_factor(symbol, q):
+    """Cromer-Mann X-ray atomic form factor f(Q) (electrons) from the `periodictable` package."""
+    try:
+        from periodictable import cromermann
+    except ImportError as exc:      # pragma: no cover - depends on the environment
+        raise ImportError("X-ray form factors need the optional 'periodictable' package "
+                          "(pip install periodictable)") from exc
+    return np.asarray(cromermann.fxrayatq(symbol, np.asarray(q, float)), float)
+
+
+def xray_weights(cfg, q):
+    """Q-dependent X-ray weights w_ij(Q) = (2 - delta_ij) c_i c_j f_i f_j / (sum c f)^2, summing to 1."""
+    n = float(sum(cfg.counts))
+    c = {t: k / n for t, k in zip(cfg.atom_types, cfg.counts)}
+    f = {t: xray_form_factor(t, q) for t in cfg.atom_types}
+    mean = sum(c[t] * f[t] for t in cfg.atom_types)
+    w = {}
+    for i, a in enumerate(cfg.atom_types):
+        for b in cfg.atom_types[i:]:
+            mult = 1.0 if a == b else 2.0
+            w["%s-%s" % (a, b)] = mult * c[a] * c[b] * f[a] * f[b] / mean ** 2
+    return w
+
+
+def total_fq_from_partials(r, partials, cfg, q, radiation="neutron"):
+    """F(Q) from the partials: neutron = sum w_ij (S_ij - 1) (barn, equals fq_from_gr(total_gr));
+    X-ray = sum c_i c_j f_i(Q) f_j(Q) (S_ij - 1) / (sum c_i f_i(Q))^2 (normalised)."""
+    q = np.asarray(q, float)
+    S = {lab: faber_ziman_sq(r, partials[lab], cfg.density, q) for lab in partials}
+    if radiation == "neutron":
+        w = neutron_weights(cfg)
+        return sum(w[lab] * S[lab] for lab in S)
+    if radiation == "xray":
+        w = xray_weights(cfg, q)
+        return sum(w[lab] * S[lab] for lab in S)
+    raise ValueError("radiation must be 'neutron' or 'xray'")
+
+
+ATOMIC_NUMBER = {"H": 1, "D": 1, "Li": 3, "Be": 4, "B": 5, "C": 6, "N": 7, "O": 8, "F": 9, "Na": 11, "Mg": 12, "Al": 13,
+                 "Si": 14, "P": 15, "S": 16, "Cl": 17, "K": 19, "Ca": 20, "Sc": 21, "Ti": 22, "V": 23, "Cr": 24, "Mn": 25,
+                 "Fe": 26, "Co": 27, "Ni": 28, "Cu": 29, "Zn": 30, "Ga": 31, "Ge": 32, "As": 33, "Se": 34, "Br": 35,
+                 "Rb": 37, "Sr": 38, "Y": 39, "Zr": 40, "Nb": 41, "Mo": 42, "Ag": 47, "Cd": 48, "In": 49, "Sn": 50,
+                 "Sb": 51, "Te": 52, "I": 53, "Cs": 55, "Ba": 56, "La": 57, "Ce": 58, "Nd": 60, "Gd": 64, "Hf": 72,
+                 "Ta": 73, "W": 74, "Pt": 78, "Au": 79, "Hg": 80, "Tl": 81, "Pb": 82, "Bi": 83, "Th": 90, "U": 92}
+
+
+def xray_coefficients_rmcprofile(cfg):
+    """Manual Appendix D: treat X-ray G(r) as neutron data with b -> Z, coefficients
+    (2 - delta_ij) c_i c_j Z_i Z_j normalised to sum to 1 (the NEUTRON_COEFFICIENTS line)."""
+    n = float(sum(cfg.counts))
+    c = {t: k / n for t, k in zip(cfg.atom_types, cfg.counts)}
+    raw = {}
+    for i, a in enumerate(cfg.atom_types):
+        for b in cfg.atom_types[i:]:
+            mult = 1.0 if a == b else 2.0
+            raw["%s-%s" % (a, b)] = mult * c[a] * c[b] * ATOMIC_NUMBER[a] * ATOMIC_NUMBER[b]
+    tot = sum(raw.values())
+    return {k: v / tot for k, v in raw.items()}
+
+
+def cromer_mann_4term(symbol, smax=2.0):
+    """Fit the 4-Gaussian Cromer-Mann form a1..a4, b1..b4, c (the layout of RMCProfile's .xray
+    file) to periodictable's f(s), s = Q/4pi in 1/Angstrom, on [0, smax]. Returns 9 numbers."""
+    from scipy.optimize import curve_fit
+    s = np.linspace(0.0, smax, 401)
+    f = xray_form_factor(symbol, 4 * np.pi * s)
+
+    def model(s, a1, b1, a2, b2, a3, b3, a4, b4, c):
+        return (a1 * np.exp(-b1 * s * s) + a2 * np.exp(-b2 * s * s) + a3 * np.exp(-b3 * s * s)
+                + a4 * np.exp(-b4 * s * s) + c)
+    z = f[0]
+    p0 = [z * 0.4, 3.0, z * 0.3, 10.0, z * 0.2, 0.5, z * 0.05, 60.0, z * 0.05]
+    popt, _ = curve_fit(model, s, f, p0=p0, maxfev=20000)
+    return [float(v) for v in popt]
+
+
+def write_xray_file(path, symbols):
+    """RMCProfile's .xray file: one line per atom type, 'SYMBOL a1 b1 a2 b2 a3 b3 a4 b4 c'."""
+    with open(path, "w", encoding="utf-8", newline="\n") as f:
+        for sym in symbols:
+            coef = cromer_mann_4term(sym)
+            f.write("%-2s " % sym.upper() + " ".join("%9.4f" % v for v in coef) + "\n")
+
+
+# ----------------------------------------------------------------------------
+# a complete input set from a box and synthetic data  (manual §3.2)
+# ----------------------------------------------------------------------------
+def write_input_set(stem, directory, cfg, *, gr=None, fq=None, weights=(0.05, 0.01), min_dist, max_move,
+                    time_limit_min, r_spacing=0.02, title="rmcprofile-skill synthetic run", extra_blocks=(),
+                    save_period_min=0.0, flags=("NO_MOVEOUT", "NO_SAVE_CONFIGURATIONS", "NO_RESOLUTION_CONVOLUTION")):
+    """Write <stem>.rmc6f, <stem>_gr.dat / <stem>_fq.dat (two-line layout) and <stem>.dat.
+
+    min_dist: {pair label: Angstrom} in the manual's pair order (missing pairs get 0.0);
+    max_move: float or {type: Angstrom}; gr = (r, G) in barn; fq = (q, F) in barn;
+    extra_blocks: DatBlock instances appended before END. Returns the written paths."""
+    d = str(directory)
+    os.makedirs(d, exist_ok=True)
+    paths = []
+    cfg.write(os.path.join(d, stem + ".rmc6f"))
+    paths.append(os.path.join(d, stem + ".rmc6f"))
+    labels = pair_labels(cfg.atom_types)
+    mm = max_move if isinstance(max_move, dict) else {t: max_move for t in cfg.atom_types}
+    dat = DatFile()
+    scal = [("TITLE", title), ("MATERIAL", "".join(cfg.atom_types)), ("INVESTIGATOR", "rmcprofile-skill"),
+            ("NUMBER_DENSITY", "%.8f Angstrom^(-3)" % cfg.density),
+            ("MINIMUM_DISTANCES", " ".join("%.3f" % min_dist.get(lab, 0.0) for lab in labels) + " Angstrom"),
+            ("MAXIMUM_MOVES", " ".join("%.3f" % mm[t] for t in cfg.atom_types) + " Angstrom"),
+            ("R_SPACING", "%.4f Angstrom" % r_spacing), ("PRINT_PERIOD", "100"),
+            ("TIME_LIMIT", "%.2f MINUTES" % time_limit_min), ("SAVE_PERIOD", "%.2f MINUTES" % save_period_min)]
+    for k, v in scal:
+        dat.scalars[k] = v
+        dat.order.append(("scalar", k))
+    dat.atoms = list(cfg.atom_types)
+    dat.order.append(("atoms",))
+    dat.blocks.append(DatBlock("FLAGS", "", [(fl, "") for fl in flags]))
+    dat.order.append(("block", len(dat.blocks) - 1))
+    for k, v in (("INPUT_CONFIGURATION_FORMAT", "rmc6f"), ("SAVE_CONFIGURATION_FORMAT", "rmc6f")):
+        dat.scalars[k] = v
+        dat.order.append(("scalar", k))
+    if gr is not None:
+        r, G = gr
+        fn = stem + "_gr.dat"
+        write_data_file(os.path.join(d, fn), r, G, title + " G(r) barn")
+        paths.append(os.path.join(d, fn))
+        dat.blocks.append(DatBlock("NEUTRON_REAL_SPACE_DATA", "1",
+                                   [("FILENAME", fn), ("DATA_TYPE", "G(r)"), ("FIT_TYPE", "G(r)"), ("START_POINT", "1"),
+                                    ("END_POINT", str(len(r))), ("CONSTANT_OFFSET", "0.0000"),
+                                    ("WEIGHT", "%.4f" % weights[0]), ("NO_FITTED_OFFSET", ""), ("NO_FITTED_SCALE", "")]))
+        dat.order.append(("block", len(dat.blocks) - 1))
+    if fq is not None:
+        q, F = fq
+        fn = stem + "_fq.dat"
+        write_data_file(os.path.join(d, fn), q, F, title + " F(Q) barn")
+        paths.append(os.path.join(d, fn))
+        dat.blocks.append(DatBlock("NEUTRON_RECIPROCAL_SPACE_DATA", "1",
+                                   [("FILENAME", fn), ("DATA_TYPE", "F(Q)"), ("FIT_TYPE", "F(Q)"), ("START_POINT", "1"),
+                                    ("END_POINT", str(len(q))), ("CONSTANT_OFFSET", "0.0000"),
+                                    ("WEIGHT", "%.4f" % weights[1]), ("CONVOLVE", ""), ("NO_FITTED_OFFSET", ""),
+                                    ("NO_FITTED_SCALE", "")]))
+        dat.order.append(("block", len(dat.blocks) - 1))
+    for blk in extra_blocks:
+        dat.blocks.append(blk)
+        dat.order.append(("block", len(dat.blocks) - 1))
+    dat.write(os.path.join(d, stem + ".dat"))
+    paths.append(os.path.join(d, stem + ".dat"))
+    return paths
+
+
+def bond_valence_sum(cfg, centre, neighbour, r0, b=0.37, cutoff=3.5):
+    """Bond valence sum on every atom of type `centre` from neighbours of type `neighbour`:
+    sum exp((r0 - d)/b) over d < cutoff (Brese & O'Keeffe 1991; manual §2.7, App. C)."""
+    dist = _min_image_distances(cfg)
+    ia, ib = np.where(cfg.atoms == centre)[0], np.where(cfg.atoms == neighbour)[0]
+    block = dist[np.ix_(ia, ib)]
+    contrib = np.where(block < cutoff, np.exp((r0 - block) / b), 0.0)
+    return contrib.sum(axis=1)

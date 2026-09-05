@@ -75,6 +75,12 @@ Package: `find_package(home=None) -> Package|None`, `package_env(pkg)`,
 `run_rmcprofile(stem, dir, pkg, timeout_min=None) -> RunResult`.
 Analysis: `pair_labels`, `rmc_grid`, `partial_gr(cfg, rmax, dr, grid)`, `neutron_weights`,
 `total_gr`, `fq_from_gr`, `coordination`, `bond_angles`, `average_cell`, `NEUTRON_B`.
+Configurations: `lattice_from_cell`, `build_configuration(cell, sites, supercell)`,
+`fold_to_unit_cell`, `export_xyz`, `export_cif`. Scattering: `faber_ziman_sq`,
+`total_fq_from_partials(r, partials, cfg, q, radiation)`, `xray_form_factor` (needs `periodictable`),
+`xray_weights`, `xray_coefficients_rmcprofile` (manual App. D), `cromer_mann_4term`,
+`write_xray_file`, `ATOMIC_NUMBER`. Runs: `write_input_set(stem, dir, cfg, gr=, fq=, min_dist=, max_move=, time_limit_min=)`,
+`bond_valence_sum(cfg, centre, neighbour, r0, b, cutoff)`.
 Adapter (`upstream_adapter`): `EXERCISES`, `stage_exercise`, `crosscheck_partials`,
 `crosscheck_gofr`, `run_and_crosscheck`, `load_records`, `save_records`, `within_tolerance`.
 Engine (`rmclite`): `Box`, `Histogram`, `PartialTarget`, `TotalGTarget`, `FqTarget`,
