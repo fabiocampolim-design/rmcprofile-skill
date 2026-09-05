@@ -81,7 +81,8 @@ line per finding, `LEVEL code: message`; exit 1 if any ERROR.
 | `end-point-beyond-data` | WARN | RMCProfile clamps `END_POINT` to the data length |
 | `filename-case` | WARN | the data file exists only with different letter case — fine on Windows, a silent stop (exit code 0) on Linux/macOS |
 | `no-weight`, `hkl-range-unspecified`, `stale-neighbour-files` | WARN | see `references/pitfalls.md` |
-| `history-file`, `potential-lists-regenerated`, `summary` | INFO | |
+| `history-file` | WARN | a `.his6f` will be read instead of the `.rmc6f`; one left by a zero-move pass makes the run compute an empty PDF and crawl (P-15) — delete it or write `IGNORE_HISTORY_FILE ::` |
+| `potential-lists-regenerated`, `summary` | INFO | |
 
 ### `run` — run RMCProfile
 

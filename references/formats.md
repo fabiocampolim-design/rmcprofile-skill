@@ -64,6 +64,9 @@ that data set in χ²), `NEUTRON_COEFFICIENTS`, `CONVOLVE ::`, `STOG`,
 `REAL_SPACE_FIT`, `RECIPROCAL_SPACE_PARAMETERS`, `REAL_SPACE_PARAMETERS`.
 Bragg items (§4.13): `BRAGG_SHAPE` (`gsas`, `gsas2`, `gsas3`, `GSAS3_NEW`
 for GSAS-II, `xray2`, `topas`), `SUPERCELL`, `RECALCULATE`, `DMIN`, `WEIGHT`.
+Item lines come in three shapes and the writer keeps each: `> KEY :: value`, `> KEY ::` with
+no value (the program's own files write `CONVOLVE ::` this way; `DatBlock` stores `""`) and a bare
+`> FLAG` (`NO_FITTED_OFFSET`, `RECALCULATE`; stored as `None`).
 The file ends with `END ::`; the parser refuses a file without it.
 
 ## Experimental data files (manual §4.12, p. 97–98)

@@ -17,9 +17,18 @@ RMCProfile 6.7.9 Windows Serial and Linux 64 builds).
   checker refuses to start a run without a configuration
   (`ERROR no-configuration`); `run_rmcprofile` reports `outputs` and
   `final_chi2`, which are empty in this case — read them, not the code.
-- **`.his6f` silently replaces `.rmc6f`.** A run directory with a leftover
-  history file continues that refinement, whatever the `.rmc6f` says, unless
-  the `.dat` carries `IGNORE_HISTORY_FILE ::`. Guard: `INFO history-file`.
+- **`.his6f` silently replaces `.rmc6f` — and one from a zero-move pass is
+  poison.** A run directory with a leftover history file continues that
+  refinement, whatever the `.rmc6f` says, unless the `.dat` carries
+  `IGNORE_HISTORY_FILE ::`. Measured 2026-09-05 (synthetic NaCl, 216 atoms):
+  after a `TIME_LIMIT 0` pass, the next 0.3-minute run read the `.his6f`,
+  generated 100 moves in 19 s and wrote a constant "PDF (RMC)" column (an
+  empty histogram); with `IGNORE_HISTORY_FILE ::` the same run generated
+  13 018 moves and took χ² from 1.6e4 to 10. `write_input_set` writes the
+  keyword by default; guard: `WARN history-file`.
+- **`SAVE_PERIOD :: 0.00` with a non-zero `TIME_LIMIT` saves at every
+  `PRINT_PERIOD`**, and a save costs seconds; `write_input_set` defaults the
+  save period to the time limit and the print period to 1000.
 - **Stale neighbour files.** `.neigh`/`.neighlist` encode the connectivity
   for distance-window and coordination constraints; after any change to the
   configuration they must be deleted (manual §5.6.1). Guard:

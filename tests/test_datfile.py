@@ -64,11 +64,11 @@ def test_scalars_atoms_and_blocks(dat_path):
     nrs = d.blocks[1]
     assert nrs.arg == "1"
     assert nrs.items[0] == ("FILENAME", "nacl_gr.dat")
-    assert ("NO_FITTED_OFFSET", "") in nrs.items
+    assert ("NO_FITTED_OFFSET", None) in nrs.items          # bare flag: no "::"
     assert d.get("BRAGG", "BRAGG_SHAPE") == "gsas2"          # the %% comment is stripped
     assert d.get("BRAGG", "SUPERCELL") == "3 3 3"
-    assert ("RECALCULATE", "") in d.blocks[2].items
-    assert d.get("FLAGS", "NO_MOVEOUT") == ""
+    assert ("RECALCULATE", None) in d.blocks[2].items
+    assert d.get("FLAGS", "NO_MOVEOUT") is None
     assert d.get("BRAGG", "NOT_THERE", "dflt") == "dflt"
 
 
@@ -89,7 +89,7 @@ def test_write_then_read_preserves_everything(dat_path, tmp_path):
     assert [(b.name, b.arg, b.items) for b in again.blocks] == [(b.name, b.arg, b.items) for b in d.blocks]
     text = out.read_text(encoding="utf-8")
     assert text.rstrip().endswith("END ::")
-    assert "  > FILENAME :: nacl_gr.dat" in text
+    assert "  > FILENAME :: nacl_gr.dat" in text and "  > NO_FITTED_OFFSET\n" in text
 
 
 def test_edit_a_value_and_write(dat_path, tmp_path):
@@ -125,3 +125,17 @@ def test_missing_end_is_an_error(tmp_path):
     p.write_text(DAT.replace("END ::\n", ""), encoding="utf-8")
     with pytest.raises(ValueError, match="END ::"):
         rt.read_dat(p)
+
+
+def test_convolve_keeps_its_double_colon(tmp_path):
+    """RMCProfile's own files write '> CONVOLVE ::' but '> NO_FITTED_OFFSET'; a writer that
+    dropped the '::' silently disabled the convolution (chapter 4, 2026-09-05)."""
+    p = tmp_path / "c.dat"
+    p.write_text("TITLE :: x\nNEUTRON_RECIPROCAL_SPACE_DATA :: 1\n  > FILENAME :: f.dat\n  > CONVOLVE ::\n"
+                 "  > NO_FITTED_SCALE\nEND ::\n", encoding="utf-8")
+    d = rt.read_dat(p)
+    assert d.get("NEUTRON_RECIPROCAL_SPACE_DATA", "CONVOLVE") == ""
+    assert d.get("NEUTRON_RECIPROCAL_SPACE_DATA", "NO_FITTED_SCALE") is None
+    d.write(p)
+    text = p.read_text(encoding="utf-8")
+    assert "  > CONVOLVE ::\n" in text and "  > NO_FITTED_SCALE\n" in text

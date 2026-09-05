@@ -47,8 +47,8 @@ Codes: `no-dat`, `dat-parse`, `no-configuration`, `rmc6f-parse`,
 `bragg-back-missing`, `bragg-parse`, `poly-file-missing` (the program would
 wait forever); warnings `end-point-beyond-data`, `filename-case` (Linux/macOS
 would not find the file), `no-weight`,
-`hkl-range-unspecified`, `stale-neighbour-files`; info `history-file`,
-`potential-lists-regenerated`, `summary`.
+`hkl-range-unspecified`, `stale-neighbour-files`, `history-file` (a `.his6f` from a
+zero-move pass poisons the next run); info `potential-lists-regenerated`, `summary`.
 
 ## 3. Run RMCProfile and read the result
 

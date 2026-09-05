@@ -217,7 +217,7 @@ class DatFile:
                 out.append("")
                 out.append("%s :: %s" % (b.name, b.arg) if b.arg else "%s ::" % b.name)
                 for k, v in b.items:
-                    out.append("  > %s :: %s" % (k, v) if v else "  > %s" % k)
+                    out.append("  > %s" % k if v is None else ("  > %s ::" % k if v == "" else "  > %s :: %s" % (k, v)))
         out += ["", "END ::"]
         with open(path, "w", encoding="utf-8", newline="\n") as f:
             f.write("\n".join(out) + "\n")
@@ -268,7 +268,10 @@ def read_dat(path):
                 raise ValueError("%s: item line outside a block: %r" % (path, ln))
             body = s[1:].strip()
             key, sep, val = body.partition("::")
-            current.items.append((key.strip(), val.strip() if sep else ""))
+            # '> KEY :: value' -> value; '> KEY ::' (e.g. CONVOLVE ::) -> ""; '> KEY' (e.g. NO_MOVEOUT) -> None.
+            # The distinction is kept because RMCProfile's own files write CONVOLVE with '::' and the
+            # NO_* flags without; the writer reproduces each form.
+            current.items.append((key.strip(), val.strip() if sep else None))
             continue
         key, sep, val = s.partition("::")
         if not sep:
@@ -491,7 +494,9 @@ def check_input_set(stem, directory):
     his, rmc = os.path.join(d, stem + ".his6f"), os.path.join(d, stem + ".rmc6f")
     cfg = None
     if os.path.isfile(his) and "IGNORE_HISTORY_FILE" not in dat.scalars:
-        out.append(Finding("INFO", "history-file", "%s.his6f present: it will be used instead of the .rmc6f" % stem))
+        out.append(Finding("WARN", "history-file", "%s.his6f present: it will be used instead of the .rmc6f; a history "
+                           "file left by a zero-move pass makes the run compute an empty PDF and crawl — delete it or add "
+                           "IGNORE_HISTORY_FILE ::" % stem))
     if os.path.isfile(rmc):
         try:
             cfg = read_rmc6f(rmc)
@@ -1201,12 +1206,18 @@ def write_xray_file(path, symbols):
 # ----------------------------------------------------------------------------
 def write_input_set(stem, directory, cfg, *, gr=None, fq=None, weights=(0.05, 0.01), min_dist, max_move,
                     time_limit_min, r_spacing=0.02, title="rmcprofile-skill synthetic run", extra_blocks=(),
-                    save_period_min=0.0, flags=("NO_MOVEOUT", "NO_SAVE_CONFIGURATIONS", "NO_RESOLUTION_CONVOLUTION")):
+                    save_period_min=None, print_period=1000, ignore_history=True,
+                    flags=("NO_MOVEOUT", "NO_SAVE_CONFIGURATIONS", "NO_RESOLUTION_CONVOLUTION")):
     """Write <stem>.rmc6f, <stem>_gr.dat / <stem>_fq.dat (two-line layout) and <stem>.dat.
 
     min_dist: {pair label: Angstrom} in the manual's pair order (missing pairs get 0.0);
     max_move: float or {type: Angstrom}; gr = (r, G) in barn; fq = (q, F) in barn;
-    extra_blocks: DatBlock instances appended before END. Returns the written paths."""
+    extra_blocks: DatBlock instances appended before END. save_period_min defaults to the time
+    limit (one save at the end); ignore_history=True writes IGNORE_HISTORY_FILE :: so that a
+    <stem>.his6f left by an earlier pass is not read — a history file written by a zero-move
+    pass makes the next run compute an empty PDF and crawl (P-15, 2026-09-05). Returns the paths."""
+    if save_period_min is None:
+        save_period_min = time_limit_min
     d = str(directory)
     os.makedirs(d, exist_ok=True)
     paths = []
@@ -1219,18 +1230,21 @@ def write_input_set(stem, directory, cfg, *, gr=None, fq=None, weights=(0.05, 0.
             ("NUMBER_DENSITY", "%.8f Angstrom^(-3)" % cfg.density),
             ("MINIMUM_DISTANCES", " ".join("%.3f" % min_dist.get(lab, 0.0) for lab in labels) + " Angstrom"),
             ("MAXIMUM_MOVES", " ".join("%.3f" % mm[t] for t in cfg.atom_types) + " Angstrom"),
-            ("R_SPACING", "%.4f Angstrom" % r_spacing), ("PRINT_PERIOD", "100"),
+            ("R_SPACING", "%.4f Angstrom" % r_spacing), ("PRINT_PERIOD", str(print_period)),
             ("TIME_LIMIT", "%.2f MINUTES" % time_limit_min), ("SAVE_PERIOD", "%.2f MINUTES" % save_period_min)]
     for k, v in scal:
         dat.scalars[k] = v
         dat.order.append(("scalar", k))
     dat.atoms = list(cfg.atom_types)
     dat.order.append(("atoms",))
-    dat.blocks.append(DatBlock("FLAGS", "", [(fl, "") for fl in flags]))
+    dat.blocks.append(DatBlock("FLAGS", "", [(fl, None) for fl in flags]))
     dat.order.append(("block", len(dat.blocks) - 1))
     for k, v in (("INPUT_CONFIGURATION_FORMAT", "rmc6f"), ("SAVE_CONFIGURATION_FORMAT", "rmc6f")):
         dat.scalars[k] = v
         dat.order.append(("scalar", k))
+    if ignore_history:
+        dat.scalars["IGNORE_HISTORY_FILE"] = ""
+        dat.order.append(("scalar", "IGNORE_HISTORY_FILE"))
     if gr is not None:
         r, G = gr
         fn = stem + "_gr.dat"
@@ -1239,7 +1253,7 @@ def write_input_set(stem, directory, cfg, *, gr=None, fq=None, weights=(0.05, 0.
         dat.blocks.append(DatBlock("NEUTRON_REAL_SPACE_DATA", "1",
                                    [("FILENAME", fn), ("DATA_TYPE", "G(r)"), ("FIT_TYPE", "G(r)"), ("START_POINT", "1"),
                                     ("END_POINT", str(len(r))), ("CONSTANT_OFFSET", "0.0000"),
-                                    ("WEIGHT", "%.4f" % weights[0]), ("NO_FITTED_OFFSET", ""), ("NO_FITTED_SCALE", "")]))
+                                    ("WEIGHT", "%.4f" % weights[0]), ("NO_FITTED_OFFSET", None), ("NO_FITTED_SCALE", None)]))
         dat.order.append(("block", len(dat.blocks) - 1))
     if fq is not None:
         q, F = fq
@@ -1249,8 +1263,8 @@ def write_input_set(stem, directory, cfg, *, gr=None, fq=None, weights=(0.05, 0.
         dat.blocks.append(DatBlock("NEUTRON_RECIPROCAL_SPACE_DATA", "1",
                                    [("FILENAME", fn), ("DATA_TYPE", "F(Q)"), ("FIT_TYPE", "F(Q)"), ("START_POINT", "1"),
                                     ("END_POINT", str(len(q))), ("CONSTANT_OFFSET", "0.0000"),
-                                    ("WEIGHT", "%.4f" % weights[1]), ("CONVOLVE", ""), ("NO_FITTED_OFFSET", ""),
-                                    ("NO_FITTED_SCALE", "")]))
+                                    ("WEIGHT", "%.4f" % weights[1]), ("CONVOLVE", ""), ("NO_FITTED_OFFSET", None),
+                                    ("NO_FITTED_SCALE", None)]))
         dat.order.append(("block", len(dat.blocks) - 1))
     for blk in extra_blocks:
         dat.blocks.append(blk)
