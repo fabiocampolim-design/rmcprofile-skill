@@ -666,6 +666,186 @@ def run_rmcprofile(stem, directory, pkg, timeout_min=None, log_name="run.log"):
 
 
 # ----------------------------------------------------------------------------
+# configuration analysis  (references/method.md — Keen 2001 definitions)
+# ----------------------------------------------------------------------------
+# Bound coherent neutron scattering lengths, fm (Sears, Neutron News 3 (1992) 26;
+# NIST table https://www.ncnr.nist.gov/resources/n-lengths/). Natural abundance;
+# D = deuterium. Extend as needed.
+NEUTRON_B = {
+    "H": -3.7390, "D": 6.671, "Li": -1.90, "Be": 7.79, "B": 5.30, "C": 6.6460, "N": 9.36, "O": 5.803, "F": 5.654,
+    "Na": 3.63, "Mg": 5.375, "Al": 3.449, "Si": 4.1491, "P": 5.13, "S": 2.847, "Cl": 9.5770, "K": 3.67, "Ca": 4.70,
+    "Sc": 12.29, "Ti": -3.438, "V": -0.3824, "Cr": 3.635, "Mn": -3.73, "Fe": 9.45, "Co": 2.49, "Ni": 10.3, "Cu": 7.718,
+    "Zn": 5.680, "Ga": 7.288, "Ge": 8.185, "As": 6.58, "Se": 7.970, "Br": 6.795, "Rb": 7.09, "Sr": 7.02, "Y": 7.75,
+    "Zr": 7.16, "Nb": 7.054, "Mo": 6.715, "Ag": 5.922, "Cd": 4.87, "In": 4.065, "Sn": 6.225, "Sb": 5.57, "Te": 5.80,
+    "I": 5.28, "Cs": 5.42, "Ba": 5.07, "La": 8.24, "Ce": 4.84, "Nd": 7.69, "Gd": 6.5, "Hf": 7.7, "Ta": 6.91, "W": 4.86,
+    "Pt": 9.60, "Au": 7.63, "Hg": 12.692, "Tl": 8.776, "Pb": 9.405, "Bi": 8.532, "Th": 10.31, "U": 8.417,
+}
+
+
+def pair_labels(types):
+    """AA AB AC BB BC CC ... — the manual's partial order (§4.1 MINIMUM_DISTANCES, §3.4 partials)."""
+    return ["%s-%s" % (types[i], types[j]) for i in range(len(types)) for j in range(i, len(types))]
+
+
+def _min_image_distances(cfg):
+    """All-pairs minimum-image distances (N x N, diagonal = inf); general cell."""
+    frac = cfg.frac - np.floor(cfg.frac)
+    d = frac[:, None, :] - frac[None, :, :]
+    d -= np.round(d)
+    cart = d @ cfg.lattice
+    r = np.sqrt((cart ** 2).sum(-1))
+    np.fill_diagonal(r, np.inf)
+    return r
+
+
+def partial_gr(cfg, rmax=20.0, dr=0.02):
+    """Partial pair distribution functions g_ij(r) by histogram, normalised to 1 at large r.
+    Minimum image only: rmax must be below half the shortest cell edge."""
+    L = min(np.linalg.norm(cfg.lattice, axis=1))
+    if rmax > L / 2:
+        raise ValueError("rmax %.2f exceeds half the shortest cell edge (%.2f): enlarge the supercell" % (rmax, L / 2))
+    r = np.arange(dr / 2, rmax, dr)
+    edges = np.arange(0.0, rmax + dr, dr)[: len(r) + 1]
+    dist = _min_image_distances(cfg)
+    V = abs(np.linalg.det(cfg.lattice))
+    types = cfg.atom_types
+    idx = {t: np.where(cfg.atoms == t)[0] for t in types}
+    out = {}
+    shell = 4 * np.pi * r ** 2 * dr
+    for i, a in enumerate(types):
+        for b in types[i:]:
+            block = dist[np.ix_(idx[a], idx[b])]
+            h, _ = np.histogram(block[np.isfinite(block)], bins=edges)
+            n_a, n_b = len(idx[a]), len(idx[b])
+            out["%s-%s" % (a, b)] = h / (n_a * (n_b / V) * shell)
+    return r, out
+
+
+def neutron_weights(cfg, radiation="neutron"):
+    """w_ij = c_i c_j b_i b_j (x2 for i != j) in barn; the coefficients of Keen's G(r)."""
+    if radiation != "neutron":
+        raise NotImplementedError("X-ray weights (Q-dependent form factors) arrive with the X-ray chapter")
+    n = float(sum(cfg.counts))
+    c = {t: k / n for t, k in zip(cfg.atom_types, cfg.counts)}
+    w = {}
+    for i, a in enumerate(cfg.atom_types):
+        for b in cfg.atom_types[i:]:
+            mult = 1.0 if a == b else 2.0
+            w["%s-%s" % (a, b)] = mult * c[a] * c[b] * NEUTRON_B[a] * NEUTRON_B[b] * BARN_PER_FM2
+    return w
+
+
+def total_gr(r, partials, cfg, radiation="neutron"):
+    """Keen 2001 eq. 10: G(r) = sum_ij c_i c_j b_i b_j (g_ij(r) - 1), in barn. Returns (r, G)."""
+    w = neutron_weights(cfg, radiation)
+    G = np.zeros(len(r))
+    for lab in partials:
+        G += w[lab] * (partials[lab] - 1.0)
+    return np.asarray(r, float), G
+
+
+def fq_from_gr(r, G, density, q):
+    """Keen 2001 eq. 12: F(Q) = rho0 * int 4 pi r^2 G(r) sin(Qr)/(Qr) dr (barn)."""
+    r = np.asarray(r, float)
+    G = np.asarray(G, float)
+    q = np.asarray(q, float)
+    dr = np.diff(r).mean()
+    qr = np.outer(q, r)
+    safe = np.where(qr == 0, 1.0, qr)
+    kernel = np.where(qr == 0, 1.0, np.sin(qr) / safe)
+    return density * (kernel * (4 * np.pi * r ** 2 * G * dr)).sum(axis=1)
+
+
+def coordination(cfg, a, b, rmax):
+    """Number of B atoms within rmax of every A atom; returns (per-A counts, histogram)."""
+    dist = _min_image_distances(cfg)
+    ia, ib = np.where(cfg.atoms == a)[0], np.where(cfg.atoms == b)[0]
+    counts = (dist[np.ix_(ia, ib)] <= rmax).sum(axis=1)
+    hist = {int(k): int(v) for k, v in zip(*np.unique(counts, return_counts=True))}
+    return counts, hist
+
+
+def bond_angles(cfg, a, b, c, rmax):
+    """B-A-C angles (degrees) for every A with B and C neighbours within rmax (minimum image)."""
+    frac = cfg.frac - np.floor(cfg.frac)
+    ia, ib, ic = (np.where(cfg.atoms == t)[0] for t in (a, b, c))
+    out = []
+    for i in ia:
+        def vecs(js):
+            d = frac[js] - frac[i]
+            d -= np.round(d)
+            v = d @ cfg.lattice
+            keep = (np.linalg.norm(v, axis=1) <= rmax) & (js != i)
+            return v[keep], js[keep]
+        vb, jb = vecs(ib)
+        vc, jc = vecs(ic)
+        for p in range(len(jb)):
+            for s in range(len(jc)):
+                if b == c and jc[s] <= jb[p]:
+                    continue                      # each unordered pair once
+                if jb[p] == jc[s]:
+                    continue
+                cosang = np.dot(vb[p], vc[s]) / (np.linalg.norm(vb[p]) * np.linalg.norm(vc[s]))
+                out.append(np.degrees(np.arccos(np.clip(cosang, -1.0, 1.0))))
+    return np.array(out)
+
+
+def average_cell(cfg):
+    a, b, c, al, be, ga = cfg.cell
+    na, nb, nc = cfg.supercell
+    return (a / na, b / nb, c / nc, al, be, ga)
+
+
+def _analysis_main(args, argv):
+    cfg = read_rmc6f(args.rmc6f)
+    stem = os.path.splitext(os.path.basename(args.rmc6f))[0]
+    os.makedirs(args.outdir, exist_ok=True)
+    extra = {"rmc6f": args.rmc6f, "n_atoms": cfg.n_atoms()}
+    if args.cmd == "pdf":
+        r, parts = partial_gr(cfg, args.rmax, args.dr)
+        _, G = total_gr(r, parts, cfg, args.radiation)
+        q = np.arange(args.dq, args.qmax, args.dq)
+        F = fq_from_gr(r, G, cfg.density, q)
+        labels = list(parts)
+        with open(os.path.join(args.outdir, stem + "_PDFpartials.csv"), "w", encoding="utf-8", newline="\n") as f:
+            f.write("   r (Ang), " + ", ".join("%9s" % lab for lab in labels) + "\n")
+            for k in range(len(r)):
+                f.write("%10.5f , " % r[k] + " , ".join("%.9f" % parts[lab][k] for lab in labels) + " , \n")
+        with open(os.path.join(args.outdir, stem + "_GofR.csv"), "w", encoding="utf-8", newline="\n") as f:
+            f.write("r (Ang), G(r) barn, G(r) barn\n")
+            for k in range(len(r)):
+                f.write("%12.6f , %16.9f , %16.9f\n" % (r[k], G[k], G[k]))
+        with open(os.path.join(args.outdir, stem + "_FofQ.csv"), "w", encoding="utf-8", newline="\n") as f:
+            f.write("Q (Ang^-1), F(Q) barn, F(Q) barn\n")
+            for k in range(len(q)):
+                f.write("%12.6f , %16.9f , %16.9f\n" % (q[k], F[k], F[k]))
+        if not args.quiet:
+            print("pdf %s: %d partials, G(0) = %.4f barn, %d r points, %d Q points -> %s"
+                  % (stem, len(labels), G[0], len(r), len(q), args.outdir))
+        extra.update({"G0": float(G[0]), "labels": labels})
+    elif args.cmd == "coord":
+        counts, hist = coordination(cfg, args.pair[0], args.pair[1], args.rmax)
+        if not args.quiet:
+            print("coordination %s around %s within %.2f A: mean %.3f, histogram %s"
+                  % (args.pair[1], args.pair[0], args.rmax, counts.mean(), hist))
+        extra.update({"mean": float(counts.mean()), "histogram": hist})
+    else:
+        ang = bond_angles(cfg, *args.triplet, args.rmax)
+        h, edges = np.histogram(ang, bins=np.arange(0.0, 180.0 + args.dangle, args.dangle))
+        name = stem + "_angles_%s-%s-%s.csv" % (args.triplet[1], args.triplet[0], args.triplet[2])
+        with open(os.path.join(args.outdir, name), "w", encoding="utf-8", newline="\n") as f:
+            f.write("angle (deg), count\n")
+            for k in range(len(h)):
+                f.write("%8.2f , %d\n" % (0.5 * (edges[k] + edges[k + 1]), h[k]))
+        if not args.quiet:
+            print("angles %s-%s-%s: %d angles, mean %.2f deg"
+                  % (args.triplet[1], args.triplet[0], args.triplet[2], len(ang), ang.mean() if len(ang) else float("nan")))
+        extra.update({"n_angles": int(len(ang))})
+    write_audit_log(args.log_dir, argv, True, extra=extra)
+    return 0
+
+
+# ----------------------------------------------------------------------------
 # audit log (rule 12), selftest, CLI (rule 11)
 # ----------------------------------------------------------------------------
 def write_audit_log(log_dir, argv, ok, checks=None, extra=None):
@@ -727,11 +907,6 @@ def selftest(outdir):
     rec("package located" if pkg else "package absent (RMCPROFILE_HOME unset) - skipped", True,
         pkg.home if pkg else "")
     return checks
-
-
-def _analysis_main(args, argv):        # replaced by the analysis task
-    print("analysis commands arrive in the next task")
-    return 2
 
 
 def build_parser():
