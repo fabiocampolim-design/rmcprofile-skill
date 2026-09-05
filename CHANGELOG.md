@@ -2,6 +2,14 @@
 
 All notable changes to rmcprofile-skill. Format: Keep a Changelog; versions: SemVer.
 
+## [0.5.4] — 2026-09-05
+
+### Changed
+- README gallery: one block per chapter — link, full-width figure, caption below — instead of a three-column table that shrank every figure to a third of the page (Fabio's review).
+
+### Fixed
+- `watch_upstream.py`: two runs of one process within one Windows clock tick wrote the same audit-log name; the name now takes a suffix when it exists.
+
 ## [0.5.3] — 2026-09-05
 
 ### Fixed

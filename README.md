@@ -85,17 +85,61 @@ the pair distribution function to a refined box, every number computed in
 the notebook and checked against a known answer. One figure per chapter:
 
 <!-- gallery:start -->
-| Chapter | Figure | Caption |
-|---|---|---|
-| [Total scattering and the pair distribution function](chapters/RMCProfile_01_Total_Scattering_and_the_PDF.ipynb) | ![Total scattering and the pair distribution function](docs/figures/RMCProfile_01_Total_Scattering_and_the_PDF.png) | Partial pair distribution functions of the ideal NaCl lattice: every interatomic distance is a delta function on RMCProfile's r grid. The first Na–Cl shell sits at a/2 = 2.82 Å, the first Na–Na and Cl–Cl shells at a/√2 = 3.99 Å. |
-| [The Reverse Monte Carlo algorithm](chapters/RMCProfile_02_The_RMC_Algorithm.ipynb) | ![The Reverse Monte Carlo algorithm](docs/figures/RMCProfile_02_The_RMC_Algorithm.png) | Left: χ² against generated moves for a fit from the ideal NaCl lattice toward the partials of a thermally displaced box. Right: the Na–Cl partial of the fit against its target after 6000 moves. |
-| [Starting configurations and the rmc6f file](chapters/RMCProfile_03_Starting_Configurations.ipynb) | ![Starting configurations and the rmc6f file](docs/figures/RMCProfile_03_Starting_Configurations.png) | The 216 Sr atoms of the thermal SrTiO₃ box folded back into one unit cell and projected on the ab plane: a Gaussian cloud around the site whose width is the displacement amplitude put in (0.06 Å per coordinate). |
-| [Fitting neutron F(Q) and G(r) with RMCProfile](chapters/RMCProfile_04_Fitting_Neutron_Data.ipynb) | ![Fitting neutron F(Q) and G(r) with RMCProfile](docs/figures/RMCProfile_04_Fitting_Neutron_Data.png) | Before any move: the synthetic G(r) 'data' (thermal box plus noise) against RMCProfile's calculated G(r) of the ideal-lattice starting box, read back from its _PDF1.csv. The delta-sharp lattice peaks must broaden into the data's. |
-| [X-ray data and the Bragg profile](chapters/RMCProfile_05_Xray_and_Bragg.ipynb) | ![X-ray data and the Bragg profile](docs/figures/RMCProfile_05_Xray_and_Bragg.png) | X-ray atomic form factors of Na and Cl from the Cromer–Mann tables: Z electrons at Q = 0, falling with Q; the ratio between them is not constant, so an X-ray F(Q) mixes the partials with Q-dependent weights. |
-| [Constraints, restraints and potentials](chapters/RMCProfile_06_Constraints_and_Potentials.ipynb) | ![Constraints, restraints and potentials](docs/figures/RMCProfile_06_Constraints_and_Potentials.png) | The Na–Cl first-shell distances of two refined boxes: with the closest approach at 2.2 Å the thermal shell is reproduced on both sides of 2.82 Å; with it at 2.75 Å (dotted) no bond can be shorter, and the distribution is cut off there. |
-| [Corrections: resolution, Q-damping and nano-size](chapters/RMCProfile_07_Corrections.ipynb) | ![Corrections: resolution, Q-damping and nano-size](docs/figures/RMCProfile_07_Corrections.png) | The damping RMCProfile applies for RESOLUTION_CORRECTION 0.20, measured as the ratio of two calculated G(r) columns of the same box: a Gaussian in r, not the exponential the manual writes. |
-| [Magnetic, EXAFS and diffuse scattering](chapters/RMCProfile_08_Magnetic_EXAFS_Diffuse.ipynb) | ![Magnetic, EXAFS and diffuse scattering](docs/figures/RMCProfile_08_Magnetic_EXAFS_Diffuse.png) | The two EXAFS edges of the package's SnO exercise (Nb and Sr absorbers) in r space: RMCProfile's calculation for the shipped starting configuration, evaluated with no moves. The exercise's measured χ(r) is not reproduced here (it belongs to the package); the legend gives the calculation's correlation with it. |
-| [Analysing configurations](chapters/RMCProfile_09_Analysing_Configurations.ipynb) | ![Analysing configurations](docs/figures/RMCProfile_09_Analysing_Configurations.png) | Left: the running coordination number of Na — Cl neighbours within a cutoff radius, averaged over the 108 Na atoms — for the refined box and the truth: a plateau at 6 across the whole first shell (the histogram at 3.2 Å is a single bar, 6 : 108), the step to 14 at the next Cl shell (4.88 Å) and the rise into the 24 at 6.3 Å. Right: the first-shell bond-length distribution, r²-weighted from the Na–Cl partial, with its mean and width for both boxes. |
+
+**[Total scattering and the pair distribution function](chapters/RMCProfile_01_Total_Scattering_and_the_PDF.ipynb)**
+
+![Total scattering and the pair distribution function](docs/figures/RMCProfile_01_Total_Scattering_and_the_PDF.png)
+
+*Partial pair distribution functions of the ideal NaCl lattice: every interatomic distance is a delta function on RMCProfile's r grid. The first Na–Cl shell sits at a/2 = 2.82 Å, the first Na–Na and Cl–Cl shells at a/√2 = 3.99 Å.*
+
+**[The Reverse Monte Carlo algorithm](chapters/RMCProfile_02_The_RMC_Algorithm.ipynb)**
+
+![The Reverse Monte Carlo algorithm](docs/figures/RMCProfile_02_The_RMC_Algorithm.png)
+
+*Left: χ² against generated moves for a fit from the ideal NaCl lattice toward the partials of a thermally displaced box. Right: the Na–Cl partial of the fit against its target after 6000 moves.*
+
+**[Starting configurations and the rmc6f file](chapters/RMCProfile_03_Starting_Configurations.ipynb)**
+
+![Starting configurations and the rmc6f file](docs/figures/RMCProfile_03_Starting_Configurations.png)
+
+*The 216 Sr atoms of the thermal SrTiO₃ box folded back into one unit cell and projected on the ab plane: a Gaussian cloud around the site whose width is the displacement amplitude put in (0.06 Å per coordinate).*
+
+**[Fitting neutron F(Q) and G(r) with RMCProfile](chapters/RMCProfile_04_Fitting_Neutron_Data.ipynb)**
+
+![Fitting neutron F(Q) and G(r) with RMCProfile](docs/figures/RMCProfile_04_Fitting_Neutron_Data.png)
+
+*Before any move: the synthetic G(r) 'data' (thermal box plus noise) against RMCProfile's calculated G(r) of the ideal-lattice starting box, read back from its _PDF1.csv. The delta-sharp lattice peaks must broaden into the data's.*
+
+**[X-ray data and the Bragg profile](chapters/RMCProfile_05_Xray_and_Bragg.ipynb)**
+
+![X-ray data and the Bragg profile](docs/figures/RMCProfile_05_Xray_and_Bragg.png)
+
+*X-ray atomic form factors of Na and Cl from the Cromer–Mann tables: Z electrons at Q = 0, falling with Q; the ratio between them is not constant, so an X-ray F(Q) mixes the partials with Q-dependent weights.*
+
+**[Constraints, restraints and potentials](chapters/RMCProfile_06_Constraints_and_Potentials.ipynb)**
+
+![Constraints, restraints and potentials](docs/figures/RMCProfile_06_Constraints_and_Potentials.png)
+
+*The Na–Cl first-shell distances of two refined boxes: with the closest approach at 2.2 Å the thermal shell is reproduced on both sides of 2.82 Å; with it at 2.75 Å (dotted) no bond can be shorter, and the distribution is cut off there.*
+
+**[Corrections: resolution, Q-damping and nano-size](chapters/RMCProfile_07_Corrections.ipynb)**
+
+![Corrections: resolution, Q-damping and nano-size](docs/figures/RMCProfile_07_Corrections.png)
+
+*The damping RMCProfile applies for RESOLUTION_CORRECTION 0.20, measured as the ratio of two calculated G(r) columns of the same box: a Gaussian in r, not the exponential the manual writes.*
+
+**[Magnetic, EXAFS and diffuse scattering](chapters/RMCProfile_08_Magnetic_EXAFS_Diffuse.ipynb)**
+
+![Magnetic, EXAFS and diffuse scattering](docs/figures/RMCProfile_08_Magnetic_EXAFS_Diffuse.png)
+
+*The two EXAFS edges of the package's SnO exercise (Nb and Sr absorbers) in r space: RMCProfile's calculation for the shipped starting configuration, evaluated with no moves. The exercise's measured χ(r) is not reproduced here (it belongs to the package); the legend gives the calculation's correlation with it.*
+
+**[Analysing configurations](chapters/RMCProfile_09_Analysing_Configurations.ipynb)**
+
+![Analysing configurations](docs/figures/RMCProfile_09_Analysing_Configurations.png)
+
+*Left: the running coordination number of Na — Cl neighbours within a cutoff radius, averaged over the 108 Na atoms — for the refined box and the truth: a plateau at 6 across the whole first shell (the histogram at 3.2 Å is a single bar, 6 : 108), the step to 14 at the next Cl shell (4.88 Å) and the rise into the 24 at 6.3 Å. Right: the first-shell bond-length distribution, r²-weighted from the Na–Cl partial, with its mean and width for both boxes.*
+
 <!-- gallery:end -->
 
 ## The course

@@ -72,8 +72,10 @@ def build(check=False):
             with open(os.path.join(ROOT, rel), "wb") as f:
                 f.write(png)
         caption = re.sub(r"\s+", " ", caption)
-        rows.append(f"| [{ch.title}](chapters/{ch.file}) | ![{ch.title}]({rel}) | {caption} |")
-    block = "\n".join([START, "| Chapter | Figure | Caption |", "|---|---|---|", *rows, END])
+        # one block per chapter: link, full-width figure, caption below (a three-column
+        # table shrank every figure to a third of the page; Fabio's review of 0.5.3)
+        rows.append(f"**[{ch.title}](chapters/{ch.file})**\n\n![{ch.title}]({rel})\n\n*{caption}*")
+    block = "\n\n".join([START, *rows, END])
     with open(README, encoding="utf-8") as f:
         text = f.read()
     if START not in text or END not in text:

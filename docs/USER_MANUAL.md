@@ -1,6 +1,6 @@
 # rmcprofile-skill — User Manual
 
-Version 0.5.3. A Python toolkit, AI-agent skill, a clean-room teaching engine
+Version 0.5.4. A Python toolkit, AI-agent skill, a clean-room teaching engine
 and (from later releases) chapter notebooks and a course on Reverse Monte Carlo modelling of total
 scattering data with [RMCProfile](https://rmcprofile.ornl.gov/).
 

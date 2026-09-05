@@ -263,7 +263,11 @@ def audit(log_dir, argv, extra):
            "utc": now.strftime("%Y-%m-%dT%H:%M:%SZ"), "python": platform.python_version(),
            "platform": platform.platform()}
     rec.update(extra)
-    path = os.path.join(log_dir, f"watch_upstream_{now:%Y%m%dT%H%M%S}{now.microsecond:06d}Z_{os.getpid()}.json")
+    stem = os.path.join(log_dir, f"watch_upstream_{now:%Y%m%dT%H%M%S}{now.microsecond:06d}Z_{os.getpid()}")
+    path, n = stem + ".json", 0
+    while os.path.exists(path):           # Windows' clock ticks every ~1-15 ms: two runs of one process can share a stamp
+        n += 1
+        path = f"{stem}_{n}.json"
     with open(path, "w", encoding="utf-8") as f:
         json.dump(rec, f, indent=2, default=str)
     return path

@@ -183,7 +183,11 @@ def test_gallery_reads_the_notebook_captions():
     with open(os.path.join(ROOT, "README.md"), encoding="utf-8") as f:
         readme = f.read()
     block = readme[readme.index(gallery.START):readme.index(gallery.END)]
-    rows = [ln for ln in block.splitlines() if ln.startswith("| [")]
-    assert len(rows) == len(with_figures)
-    for row in rows:
-        assert len(row.split("|")[3].strip()) > 40, row
+    links = [ln for ln in block.splitlines() if ln.startswith("**[")]
+    images = [ln for ln in block.splitlines() if ln.startswith("![")]
+    captions = [ln for ln in block.splitlines() if ln.startswith("*") and not ln.startswith("**")]
+    assert len(links) == len(images) == len(captions) == len(with_figures)
+    for cap in captions:
+        assert len(cap.strip("*").strip()) > 40, cap
+    # caption directly below its figure, never beside it in a table column
+    assert "| Chapter |" not in block
