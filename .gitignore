@@ -1,0 +1,7 @@
+out/
+logs/
+__pycache__/
+.pytest_cache/
+.ipynb_checkpoints/
+docs/USER_MANUAL.html
+docs/USER_MANUAL.pdf
