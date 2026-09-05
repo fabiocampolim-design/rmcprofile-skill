@@ -1,0 +1,6 @@
+* text=auto eol=lf
+*.png binary
+*.pdf binary
+*.ipynb text eol=lf
+tests/conformance.py text eol=lf
+tests/test_githubify_conformance.py text eol=lf

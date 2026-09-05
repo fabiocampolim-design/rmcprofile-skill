@@ -1,0 +1,12 @@
+# Python side of rmcprofile-skill (executed with Python 3.12, 2026-09).
+# RMCProfile itself is NOT a Python package: install it from
+# https://rmcprofile.ornl.gov/download/ and point RMCPROFILE_HOME at the
+# RMCProfile_package directory.
+numpy>=2.0,<3
+scipy>=1.14
+matplotlib>=3.9
+jupyter
+ipykernel
+nbconvert>=7
+pytest>=7
+pyflakes
