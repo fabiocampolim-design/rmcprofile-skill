@@ -571,6 +571,11 @@ def check_input_set(stem, directory):
         out.append(Finding("ERROR", "poly-file-missing",
                            "POLYHEDRAL_RESTRAINT :: block but %s.poly is missing (RMCProfile waits for it indefinitely)" % stem))
 
+    # nanoparticle mode needs the bulk density beside the radius (chapter 7, 2026-09-05)
+    if "PARTICLE_RADIUS" in dat.scalars and "BULK_RHO" not in dat.scalars:
+        out.append(Finding("ERROR", "bulk-rho-missing",
+                           "PARTICLE_RADIUS :: without BULK_RHO :: (RMCProfile stops: \"Low dimension RMC requested. But no 'BULK_RHO' keyword found\")"))
+
     # neighbour files must be deleted after a configuration change (§5.6.1)
     for ext in (".neigh", ".neighlist"):
         if os.path.isfile(os.path.join(d, stem + ext)):

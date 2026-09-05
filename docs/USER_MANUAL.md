@@ -78,6 +78,7 @@ line per finding, `LEVEL code: message`; exit 1 if any ERROR.
 | `data-block-no-filename`, `data-file-missing`, `data-file-parse` | ERROR | a data block's file |
 | `bragg-file-missing`, `bragg-inst-missing`, `bragg-back-missing`, `bragg-parse` | ERROR | the `BRAGG ::` block's files |
 | `poly-file-missing` | ERROR | `POLYHEDRAL_RESTRAINT ::` without `STEM.poly` — RMCProfile waits for it forever |
+| `bulk-rho-missing` | ERROR | `PARTICLE_RADIUS ::` without `BULK_RHO ::` — RMCProfile stops ("Low dimension RMC requested") (P-18) |
 | `end-point-beyond-data` | WARN | RMCProfile clamps `END_POINT` to the data length |
 | `filename-case` | WARN | the data file exists only with different letter case — fine on Windows, a silent stop (exit code 0) on Linux/macOS |
 | `no-weight`, `hkl-range-unspecified`, `stale-neighbour-files` | WARN | see `references/pitfalls.md` |

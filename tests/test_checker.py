@@ -93,3 +93,15 @@ def test_polyhedral_restraint_needs_its_poly_file(tmp_path):
     assert "poly-file-missing" in _codes(rt.check_input_set("nacl", tmp_path), "ERROR")
     (tmp_path / "nacl.poly").write_text("title\n1.613 100 300\n", encoding="utf-8")
     assert "poly-file-missing" not in _codes(rt.check_input_set("nacl", tmp_path))
+
+
+def test_particle_radius_needs_bulk_rho(tmp_path):
+    """RMCProfile stops with "Low dimension RMC requested. But no 'BULK_RHO' keyword found"
+    when PARTICLE_RADIUS :: is given alone (chapter 7, 2026-09-05)."""
+    _write_set(tmp_path)
+    t = (tmp_path / "nacl.dat").read_text(encoding="utf-8").replace("END ::", "PARTICLE_RADIUS :: 10.0\n\nEND ::")
+    (tmp_path / "nacl.dat").write_text(t, encoding="utf-8")
+    assert "bulk-rho-missing" in _codes(rt.check_input_set("nacl", tmp_path), "ERROR")
+    t = t.replace("END ::", "BULK_RHO :: 0.0446\n\nEND ::")
+    (tmp_path / "nacl.dat").write_text(t, encoding="utf-8")
+    assert "bulk-rho-missing" not in _codes(rt.check_input_set("nacl", tmp_path))

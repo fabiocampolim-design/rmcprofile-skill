@@ -11,6 +11,13 @@ RMCProfile 6.7.9 Windows Serial and Linux 64 builds).
   never times out. Cause: the file was deleted while "cleaning outputs" —
   `.poly`, `.fs` and `.sf` are *inputs*. Fix: keep them. Guard:
   `check_input_set` → `ERROR poly-file-missing` (2026-09-05).
+- **`PARTICLE_RADIUS ::` alone stops the run.** "Low dimension RMC requested. But
+  no 'BULK_RHO' keyword found" — the nanoparticle envelope needs the bulk number
+  density beside the radius, which the manual's `PARTICLE_RADIUS` entry does not say
+  (P-18). Guard: `check_input_set` → `ERROR bulk-rho-missing` (2026-09-05).
+- **`RESOLUTION_CORRECTION` is Gaussian.** The manual writes exp(−r·Expo); the program
+  applies exp(−(r·Expo)²/2) — measured as the ratio of two calculated G(r) columns of
+  the same box, to 1e-3 (chapter 7, P-17). Convert a PDFgui `Qdamp` directly.
 - **Missing configuration exits with code 0.** "The file X.rmc6f does not
   exist! Hence we have to stop ..." — and the process returns 0. Scripts
   that trust the exit code see a successful run with no outputs. Guard: the
