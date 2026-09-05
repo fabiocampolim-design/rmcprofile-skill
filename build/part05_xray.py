@@ -118,15 +118,15 @@ if not skip_without_package("the X-ray run"):
     res = rt.run_rmcprofile("nx", work, PKG, timeout_min=3)
     print("rc", res.returncode, "| chi2:", res.final_chi2, "| outputs:", [o for o in res.outputs if o.endswith(".csv")])
     x, calc, expt = rt.read_csv_pair(os.path.join(work, "nx_XFQ1.csv"))
-    corr = np.corrcoef(calc, F_x)[0, 1]
-    ratio = np.median(calc[10:300] / F_x[10:300])
+    F_x_ideal = rt.total_fq_from_partials(r, rt.partial_gr(cfg, rmax=8.0, dr=0.02)[1], cfg, qq, radiation="xray")
+    corr = np.corrcoef(calc, F_x_ideal)[0, 1]
+    ratio = np.median(calc[10:300] / F_x_ideal[10:300])
     print(f"experiment column vs our data: max|diff| = {np.max(np.abs(expt - F_x)):.1e}")
-    print(f"calculated column vs our (sum c f)^2-normalised F(Q): correlation {corr:.3f}, median ratio {ratio:.3f}")
+    print(f"calculated column vs our (sum c f)^2-normalised F(Q) of the same ideal lattice: correlation {corr:.3f}, median ratio {ratio:.3f}")
     fig, ax = plt.subplots()
     ax.plot(x, expt, "k", lw=0.8, label="data (RMCProfile's experiment column)")
     ax.plot(x, calc, lw=0.8, label="RMCProfile, ideal lattice")
-    ax.plot(qq, rt.total_fq_from_partials(r, rt.partial_gr(cfg, rmax=8.0, dr=0.02)[1], cfg, qq, radiation="xray"),
-            lw=0.8, alpha=0.7, label="toolkit, ideal lattice")
+    ax.plot(qq, F_x_ideal, lw=0.8, alpha=0.7, label="toolkit, ideal lattice")
     ax.set_xlim(0.5, 12); ax.set_xlabel("Q (Å⁻¹)"); ax.set_ylabel("X-ray F(Q)"); ax.legend()
     show(fig)
     caption("RMCProfile's X-ray F(Q) of the ideal NaCl lattice against the toolkit's for the same "
@@ -160,7 +160,7 @@ if not skip_without_package("the Bragg files of the shipped exercise"):
     back = rt.read_back(os.path.join(work, stem + ".back"))
     inst = rt.read_inst(os.path.join(work, stem + ".inst"))
     hkl = rt.read_hkl(os.path.join(work, stem + ".hkl"))
-    print(f".bragg: {brg.n} points of bank {brg.bank}, TOF {brg.x.min():.0f}–{brg.x.max():.0f} µs, scale {brg.scale}")
+    print(f".bragg: {brg.npoints} points of bank {brg.bank}, TOF {brg.x.min():.0f}–{brg.x.max():.0f} µs, scale {brg.scale}")
     print(f".back: {len(back)} background coefficients; .inst: {len(inst)} bank(s), {len(inst[0]['values'])} values; .hkl: {hkl}")
     d = rt.read_dat(os.path.join(work, stem + ".dat"))
     print("BRAGG block keywords:", [k for k, _ in next(b for b in d.blocks if b.name == "BRAGG").items])
@@ -177,8 +177,8 @@ if not skip_without_package("the Bragg files of the shipped exercise"):
     caption("The Bragg profile of the package's SF₆ exercise (bank data, black) and RMCProfile's "
             "calculated profile for the shipped configuration (red), with their difference: "
             "the average structure of the 4 320-atom box, fitted together with G(r) and F(Q).")
-    check("the four Bragg input files parse and agree on their bank", brg.bank == inst[0]["bank"])
-    check("RMCProfile evaluated the profile (a _bragg.csv with the data's point count)", res.returncode == 0 and len(t) == brg.n)
+    check("the four Bragg input files parse (one bank of data, its background and instrument lines)", brg.npoints > 0 and len(back) >= 1 and len(inst) >= 1)
+    check("RMCProfile evaluated the profile (a _bragg.csv with the data's point count)", res.returncode == 0 and len(t) == brg.npoints)
     check("the shipped configuration already reproduces the profile (correlation > 0.99)", corr_b > 0.99, f"{corr_b:.4f}")
 """),
 

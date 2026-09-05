@@ -2,6 +2,17 @@
 
 All notable changes to rmcprofile-skill. Format: Keep a Changelog; versions: SemVer.
 
+## [0.3.0] — 2026-09-05
+
+### Added
+- The book: eleven executed chapter notebooks in `chapters/` (§1–40, one per data type RMCProfile fits, exercises with worked solutions), generated from `build/part*.py` by `build/assemble.py`, executed by `build/execute.py` on the `rmcprofile-mc` kernel with a PASS/FAIL tally; `build/gallery.py` writes `docs/figures/` and the README gallery; `tests/test_notebooks.py` guards sources, outputs, totals and leaks.
+- Toolkit: `lattice_from_cell`, `build_configuration`, `fold_to_unit_cell`, `export_xyz`, `export_cif`, `faber_ziman_sq`, `xray_form_factor` / `xray_weights` / `total_fq_from_partials(..., radiation)` (needs `periodictable`), `xray_coefficients_rmcprofile`, `cromer_mann_4term`, `write_xray_file`, `write_input_set` (a complete synthetic input set; `IGNORE_HISTORY_FILE ::` by default), `bond_valence_sum`; `.dat` writer keeps the three keyword forms (`> KEY :: v`, `> KEY ::`, `> KEY`).
+- Checker: `bulk-rho-missing` (`PARTICLE_RADIUS ::` without `BULK_RHO ::` stops the program), `history-file` warning (a zero-move `.his6f` poisons the next run).
+- Measured, not assumed (chapter 7): `RESOLUTION_CORRECTION` applies exp(−(r·Expo)²/2), not the manual's exp(−r·Expo); `PARTICLE_RADIUS` replaces the bulk baseline −G₀ by −G₀·f(r) (spherical shape function, D = 2R) beyond the closest approach. Recorded as findings P-17 and P-18 in the study repository.
+
+### Changed
+- `write_input_set` defaults: save period = time limit, print period 1000.
+
 ## [0.2.0] — 2026-09-05
 
 ### Added

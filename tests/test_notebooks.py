@@ -28,7 +28,7 @@ from nbbuild import make_cell  # noqa: E402
 KEYS = [c.key for c in CHAPTERS]
 PATHS = outputs(ROOT)
 COMMITTED = [k for k in KEYS if os.path.exists(PATHS[k])]     # chapters land one task at a time
-EXPECTED = {"cells": 3, "pass": 0, "figures": 0}              # raised as chapters land (0.3.0 sets the book totals)
+EXPECTED = {"cells": 133, "pass": 117, "figures": 24}          # the 0.3.0 book: eleven executed chapters
 MAX_NOTEBOOK_BYTES = 1_500_000
 TARGET_NOTEBOOK_BYTES = 1_000_000
 

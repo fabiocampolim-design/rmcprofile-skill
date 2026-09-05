@@ -60,6 +60,18 @@ file (`--rmax`/`--dr` apply to `synth`).
 `python docs/build_manual.py` — `docs/USER_MANUAL.md` → HTML (+ PDF with
 pandoc): `--outdir`, `--no-pdf`, `-v` / `--verbose`.
 
+The book (`chapters/`): `python build/assemble.py` generates the notebooks from
+`build/part*.py` — `--which KEY[,KEY]|all` (a notebook whose sources are unchanged
+is kept, outputs included), `--outdir`,
+`--log-dir`, `--list` (cells and figures per chapter, no write), `--force` (rewrite a
+notebook whose sources are unchanged — by default such a notebook is kept with
+its outputs), `-v` / `--verbose`, `-q` / `--quiet`. `python build/execute.py` runs them with
+nbconvert — `--which`, `--indir`, `--outdir`, `--log-dir`, `--kernel`
+(default `rmcprofile-mc`), `--timeout` (per cell, s), `--tally-only` (count
+PASS/FAIL without executing), `-v`, `-q`; the tally goes to
+`logs/execute.log`. `python build/gallery.py` writes `docs/figures/*.png` and
+the README gallery block — `--check` (exit 1 if the block is stale).
+
 Installers: `scripts/install_rmcprofile_windows.ps1 [-DryRun] [-Conda path]`,
 `scripts/install_rmcprofile.sh [--dry-run] [--conda path]` — conda env
 `rmcprofile`, kernel `rmcprofile-mc`, explicit per-step status.

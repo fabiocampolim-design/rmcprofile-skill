@@ -60,13 +60,28 @@ together with a small clean-room RMC engine for teaching.
    in `AGENTS.md` and the manual; version strings must agree across
    `VERSION`, `CITATION.cff`, `CHANGELOG.md`, `SKILL.md`.
 
-## What was deliberately left out of 0.2.0
+10. **The chapters are generated, executed and measured.** Every notebook in
+   `chapters/` comes from `build/part*.py` through `build/assemble.py`
+   (header, table of contents and tally cells are generated; global section
+   and figure numbers), is executed by `build/execute.py` on the
+   `rmcprofile-mc` kernel, and carries `check(...)` lines whose PASS/FAIL
+   totals the suite pins. Package-bound cells skip without `RMCPROFILE_HOME`
+   and say so. Where the manual and the program disagree the chapter
+   *measures* the program (chapter 7: the damping is Gaussian, the
+   nanoparticle keyword corrects the baseline) and the finding goes to the
+   study repository's ledger; where the book cannot reproduce something
+   (the X-ray F(Q) shape, magnetic and diffuse fits) it says so in the
+   chapter rather than lowering a threshold until a check passes.
 
-X-ray form-factor weights, EXAFS χ(k) parsing, `.bvs`/`.bonds`/`.triplets`
-readers, CIF/XYZ export and unit-cell fold-back (they arrive with the
-chapters that use them); an F(Q) cross-check (RMCProfile convolves F(Q)
-with the box function); the `rmc_tools` parser comparison (its conda
-package ships Python 3.7 builds only); the weekly upstream watch script.
+## What was deliberately left out of 0.3.0
+
+EXAFS χ(k) computation and magnetic / diffuse-scattering models (chapter 8
+runs the shipped EXAFS exercise and documents the other two); `.bvs`,
+`.bonds`, `.triplets` readers; an F(Q) cross-check (RMCProfile convolves
+F(Q) with the box function) and the X-ray F(Q) processing (finding N-8);
+the `rmc_tools` parser comparison (its conda package ships Python 3.7
+builds only); the course and the weekly upstream watch script (next
+releases).
 
 ## Verified with
 

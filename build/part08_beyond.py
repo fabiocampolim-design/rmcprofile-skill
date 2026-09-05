@@ -100,9 +100,9 @@ md(r"""
 **8.1** In the SnO exercise's `.dat` file, which `K_POWER` weights the EXAFS data, and what
 does a higher power do to the fit's sensitivity at large $k$?
 
-**8.2** The EXAFS run above made no move. Set `TIME_LIMIT` to one minute and compare the
-`EXAFS_1` χ² before and after (the shipped configuration is already refined, so expect a
-small change).
+**8.2** The run above wrote a k-space and an r-space output per edge. Read the k-space one
+and check that its k range agrees with the `START_POINT_(k_space)` / `END_POINT_(k_space)`
+values of the block — are they point indices, as in the PDF blocks, or k values?
 """),
 
 code(r"""
@@ -111,15 +111,13 @@ if not skip_without_package("the exercises"):
     kp = [b.get("K_POWER") for b in exafs]
     print("K_POWER per edge:", kp, "— chi(k) is multiplied by k^n, so a higher n amplifies the weak high-k oscillations")
     check("8.1 both EXAFS blocks declare a K_POWER", all(v is not None for v in kp))
-    # 8.2 — a one-minute refinement of the shipped box
-    work2 = os.path.join(WORK, "exafs_1min")
-    ua.stage_exercise(PKG, "ex_7", work2)
-    d2 = rt.read_dat(os.path.join(work2, stem + ".dat"))
-    d2.scalars["TIME_LIMIT"] = "1.0 MINUTES"
-    d2.scalars["SAVE_PERIOD"] = "1.0 MINUTES"
-    d2.write(os.path.join(work2, stem + ".dat"))
-    res2 = rt.run_rmcprofile(stem, work2, PKG, timeout_min=6)
-    print(f"EXAFS_1 chi2: no moves {res.final_chi2['EXAFS_1']:.4g} -> one minute {res2.final_chi2['EXAFS_1']:.4g} ({res2.final_chi2['m_generated']} moves)")
-    check("8.2 a minute of moves does not worsen the EXAFS_1 chi2 of the refined box", res2.final_chi2["EXAFS_1"] <= res.final_chi2["EXAFS_1"] * 1.05)
+    # 8.2 — the k-space output against the block's declared range
+    k1, kc, ke = rt.read_csv_pair(os.path.join(work, [o for o in outs if "_Q_" in o][0]))
+    b0 = exafs[0]
+    k_lo, k_hi = float(b0.get("START_POINT_(k_space)")), float(b0.get("END_POINT_(k_space)"))
+    print(f"k-space output: {len(k1)} points, k = {k1.min():.3f}–{k1.max():.3f} Å⁻¹; block says START {k_lo}, END {k_hi}")
+    print("the values are k in Å⁻¹, not point indices — unlike START_POINT / END_POINT of the PDF blocks")
+    check("8.2 the k-space output lies within the declared k range", k1.min() >= k_lo - 0.05 and k1.max() <= k_hi + 0.05,
+          f"{k1.min():.2f}–{k1.max():.2f} vs {k_lo}–{k_hi}")
 """),
 ]

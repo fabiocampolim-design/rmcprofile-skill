@@ -22,6 +22,7 @@ Every invocation appends an audit record to ``<log-dir>/assemble.log``
 """
 
 import argparse
+import json
 import functools
 import importlib
 import os
@@ -32,7 +33,7 @@ from collections import namedtuple
 HERE = os.path.dirname(os.path.abspath(__file__))
 ROOT = os.path.normpath(os.path.join(HERE, ".."))
 sys.path.insert(0, HERE)
-from nbbuild import write_notebook, md, code  # noqa: E402
+from nbbuild import write_notebook, make_cell, md, code  # noqa: E402
 from buildlog import AuditLog  # noqa: E402
 
 CHAPTERS_DIR = "chapters"
@@ -223,16 +224,30 @@ hand (a test compares them with the sources). Re-execute with `build/execute.py`
 """
 
 
+def same_sources(path, cells):
+    """True when the notebook at ``path`` exists and its cell sources equal ``cells``
+    (so an executed notebook is not rewritten — and its outputs wiped — for nothing)."""
+    if not os.path.isfile(path):
+        return False
+    with open(path, encoding="utf-8") as f:
+        nb = json.load(f)
+    stored = ["".join(c["source"]).strip() for c in nb["cells"]]
+    built = ["".join(make_cell(k, s)["source"]).strip() for k, s in cells]
+    return stored == built
+
+
 def outputs(root=ROOT):
     return {c.key: os.path.join(root, CHAPTERS_DIR, c.file) for c in CHAPTERS}
 
 
 def select(which):
+    """Chapter keys for --which: 'all' / 'main', one key, or a comma-separated list of keys."""
     if which in ("all", "main"):
         return [c.key for c in present()]
-    if which in BY_KEY:
-        return [which]
-    raise SystemExit(f"unknown --which {which!r}; use all, main or one of " + ", ".join(BY_KEY))
+    keys = [k.strip() for k in which.split(",") if k.strip()]
+    if keys and all(k in BY_KEY for k in keys):
+        return keys
+    raise SystemExit(f"unknown --which {which!r}; use all, main, one of " + ", ".join(BY_KEY) + " or a comma-separated list")
 
 
 def build_parser():
@@ -242,6 +257,8 @@ def build_parser():
     ap.add_argument("--outdir", default=ROOT, help="repository root receiving chapters/*.ipynb (default: this repository)")
     ap.add_argument("--log-dir", default=None, help="where the audit log goes (default: <outdir>/logs)")
     ap.add_argument("--list", action="store_true", help="print chapters, parts and cell counts, write nothing")
+    ap.add_argument("--force", action="store_true",
+                    help="rewrite a notebook even when its sources are unchanged (drops its executed outputs)")
     g = ap.add_mutually_exclusive_group()
     g.add_argument("-v", "--verbose", action="store_true")
     g.add_argument("-q", "--quiet", action="store_true")
@@ -266,6 +283,9 @@ def main(argv=None):
                 continue
             os.makedirs(chapters_dir, exist_ok=True)
             out = os.path.join(chapters_dir, ch.file)
+            if not args.force and same_sources(out, cells):
+                log.info(f"kept {out}: sources unchanged, executed outputs preserved (--force rewrites)")
+                continue
             write_notebook(cells, out, echo=False)
             log.info(f"wrote {out} ({len(cells)} cells)")
         if not args.list:

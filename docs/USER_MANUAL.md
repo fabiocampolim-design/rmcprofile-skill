@@ -1,6 +1,6 @@
 # rmcprofile-skill — User Manual
 
-Version 0.2.0. A Python toolkit, AI-agent skill, a clean-room teaching engine
+Version 0.3.0. A Python toolkit, AI-agent skill, a clean-room teaching engine
 and (from later releases) chapter notebooks and a course on Reverse Monte Carlo modelling of total
 scattering data with [RMCProfile](https://rmcprofile.ornl.gov/).
 
@@ -205,7 +205,25 @@ python docs/build_manual.py [--outdir DIR] [--no-pdf] [-v | --verbose]
 Writes `USER_MANUAL.html` (pandoc if present, else a built-in converter)
 and, with pandoc and a LaTeX engine, `USER_MANUAL.pdf`.
 
-## 8. Troubleshooting
+## 8. The book: `chapters/`
+
+Eleven executed notebooks (§1–40; index in `chapters/README.md`), one per
+data type RMCProfile fits, each with `check(...)` lines that print `[PASS]` or
+`[FAIL]` and exercises with worked solutions. They run on the `rmcprofile-mc`
+kernel; cells that need the package skip without `RMCPROFILE_HOME` and say so.
+The notebooks are generated — edit `build/part*.py`, never the `.ipynb`:
+
+| Command | Flags |
+|---|---|
+| `python build/assemble.py` — regenerate notebooks from the sources | `--which KEY[,KEY]` or `all` (default; a notebook whose sources are unchanged is kept with its outputs), `--outdir DIR`, `--log-dir DIR`, `--list` (cells and figures per chapter, no write), `--force` (rewrite even when the sources are unchanged; by default an executed notebook with unchanged sources is kept), `-v` / `--verbose`, `-q` / `--quiet` |
+| `python build/execute.py` — execute with nbconvert, tally PASS/FAIL | `--which`, `--indir DIR`, `--outdir DIR`, `--log-dir DIR`, `--kernel NAME` (default `rmcprofile-mc`), `--timeout SECONDS` (per cell, default 900), `--tally-only` (count without executing), `-v`, `-q`; tally in `logs/execute.log` |
+| `python build/gallery.py` — `docs/figures/*.png` + the README gallery | `--check` (exit 1 if the README block is stale) |
+
+`tests/test_notebooks.py` checks that every notebook equals its sources, is
+executed without errors or `[FAIL]`, matches the pinned totals and leaks no
+local path.
+
+## 9. Troubleshooting
 
 | Symptom | See |
 |---|---|
@@ -219,7 +237,7 @@ and, with pandoc and a LaTeX engine, `USER_MANUAL.pdf`.
 
 More in `references/pitfalls.md`.
 
-## 9. Licence
+## 10. Licence
 
 Apache-2.0 (`LICENSE`, `NOTICE`). Independent of and not affiliated with
 the RMCProfile developers or their institutions. RMCProfile is distributed

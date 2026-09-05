@@ -4,7 +4,7 @@ description: Set up, check, run and analyse RMCProfile 6.7.9 refinements of neut
 license: Apache-2.0
 ---
 
-# rmcprofile-skill 0.2.0
+# rmcprofile-skill 0.3.0
 
 A Python toolkit around RMCProfile, the Reverse Monte Carlo program for total
 scattering (rmcprofile.ornl.gov). It reads and writes every input and output
@@ -155,3 +155,21 @@ pair distribution to be reproduced, not the coordinates
 (`references/rmclite.md` §5). In Python: `Box.from_rmc6f`, `Histogram`,
 `PartialTarget`, `TotalGTarget`, `FqTarget`, `ClosestApproach`,
 `DistanceWindow`, `BondPotential`, `RmcLite(...).run(n)`, `synth_targets`.
+
+## 10. Read or rebuild the book
+
+`chapters/RMCProfile_NN_*.ipynb` — eleven executed notebooks (§1–40, index in
+`chapters/README.md`): 1 total scattering and the PDF, 2 the RMC algorithm,
+3 starting configurations, 4 fitting neutron data with RMCProfile, 5 X-ray
+and Bragg, 6 constraints and potentials, 7 corrections (the measured forms of
+`RESOLUTION_CORRECTION` and `PARTICLE_RADIUS`), 8 EXAFS / magnetic / diffuse,
+9 analysing configurations, 10 benchmarks and ecosystem. Point a user at the
+chapter, not at a paraphrase: every number in them was computed in the
+notebook. To rebuild after editing `build/part*.py`:
+
+```bash
+python build/assemble.py --which 07          # regenerate one chapter (unchanged notebooks are kept with their outputs)
+RMCPROFILE_HOME=... python build/execute.py --which 07   # execute it on the rmcprofile-mc kernel; PASS/FAIL tally in logs/execute.log
+python build/gallery.py                      # docs/figures + README gallery
+python -m pytest tests/test_notebooks.py -q  # sources, outputs, totals, leaks
+```

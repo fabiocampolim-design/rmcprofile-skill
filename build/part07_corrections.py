@@ -15,8 +15,8 @@ function, `BROADENING_CORRECTION` convolves it with a Gaussian whose width grows
 `R_CUTOFF` zeroes the Fourier ripples below the closest approach, and `PARTICLE_RADIUS`
 applies a nanoparticle shape function. As in chapter 4 the data are synthetic, so the right
 correction is known and the wrong one measurable — and everything runs at `TIME_LIMIT 0`,
-which makes every comparison deterministic: one evaluation of the ideal lattice against
-the data, no moves.
+which makes every comparison deterministic: one evaluation of the *truth box itself*
+against the data, no moves, so the only thing that can differ is the correction.
 """),
 
 code(r"""
@@ -31,10 +31,12 @@ r, g_truth, G_truth = rl.synth_targets(truth, rmax=8.0, dr=0.02, noise=0.0, rng=
 G0 = -sum(c * rt.NEUTRON_B[t] for t, c in zip(cfg.atom_types, np.array(cfg.counts) / cfg.n_atoms())) ** 2 * rt.BARN_PER_FM2
 print(f"G(r -> 0) = -(sum c b)^2 = {G0:.4f} barn")
 
+model = truth.to_rmc6f(cfg)          # the model is the truth box itself: only the correction differs from the data
+
 def evaluate(tag, G_data, block_items=(), scalars=()):
-    '''One RMCProfile pass (TIME_LIMIT 0) of the ideal lattice against G_data; returns (chi2, r, calc, expt).'''
+    '''One RMCProfile pass (TIME_LIMIT 0) of the truth box against G_data; returns (chi2, r, calc, expt).'''
     work = os.path.join(WORK, tag)
-    rt.write_input_set("k", work, cfg, gr=(r, G_data), min_dist={"Na-Na": 3.0, "Na-Cl": 2.2, "Cl-Cl": 3.0},
+    rt.write_input_set("k", work, model, gr=(r, G_data), min_dist={"Na-Na": 3.0, "Na-Cl": 2.2, "Cl-Cl": 3.0},
                        max_move=0.05, time_limit_min=0.0, title=tag)
     d = rt.read_dat(os.path.join(work, "k.dat"))
     for k, v in block_items:
@@ -90,7 +92,7 @@ if not skip_without_package("the damping measurement"):
 
 md(r"""
 With the form known, synthesise "measured" data from the thermal box's $G(r)$ damped by
-$e^{-(\alpha r)^2/2}$ with $\alpha = 0.05$ Å⁻¹, and evaluate the ideal lattice against
+$e^{-(\alpha r)^2/2}$ with $\alpha = 0.05$ Å⁻¹, and evaluate the truth box against
 them with no correction, with the right $\alpha$, and with a wrong one. The χ² of the data
 set is lowest for the right correction.
 """),
@@ -104,12 +106,12 @@ if not skip_without_package("the damping comparison"):
     chi_wrong, _, calc_wrong, _ = evaluate("damp_wrong", G_damped, [("RESOLUTION_CORRECTION", "0.20")])
     fig, ax = plt.subplots()
     ax.plot(x, expt, "k", lw=0.8, label="damped 'data' (α = 0.05 Å⁻¹)")
-    ax.plot(x, calc_none, lw=0.8, alpha=0.7, label="ideal lattice, no correction")
-    ax.plot(x, calc_right, lw=0.8, label="ideal lattice, RESOLUTION_CORRECTION 0.05")
+    ax.plot(x, calc_none, lw=0.8, alpha=0.7, label="truth box, no correction")
+    ax.plot(x, calc_right, lw=0.8, label="truth box, RESOLUTION_CORRECTION 0.05")
     ax.set_xlim(2, 8); ax.set_xlabel("r (Å)"); ax.set_ylabel("G(r) (barn)"); ax.legend()
     show(fig)
     caption("Synthetic G(r) damped by exp(−(0.05 r)²/2) against RMCProfile's calculated G(r) "
-            "of the ideal lattice without and with the matching RESOLUTION_CORRECTION: the "
+            "of the truth box without and with the matching RESOLUTION_CORRECTION: the "
             "corrected model's peaks shrink with r the way the data's do.")
     check("the right damping gives the lowest chi2 of the three", chi_right < chi_none and chi_right < chi_wrong,
           f"none {chi_none:.4g}, right {chi_right:.4g}, wrong {chi_wrong:.4g}")
@@ -144,12 +146,12 @@ if not skip_without_package("the broadening comparison"):
     chi_b_wrong, _, calc_b_wrong, _ = evaluate("broad_wrong", G_broad, [("BROADENING_CORRECTION", "0.08")])
     fig, ax = plt.subplots()
     ax.plot(x, expt_b, "k", lw=0.8, label="broadened 'data' (β = 0.02)")
-    ax.plot(x, calc_b_none, lw=0.8, alpha=0.7, label="ideal lattice, no correction")
-    ax.plot(x, calc_b_right, lw=0.8, label="ideal lattice, BROADENING_CORRECTION 0.02")
+    ax.plot(x, calc_b_none, lw=0.8, alpha=0.7, label="truth box, no correction")
+    ax.plot(x, calc_b_right, lw=0.8, label="truth box, BROADENING_CORRECTION 0.02")
     ax.set_xlim(5.5, 8); ax.set_xlabel("r (Å)"); ax.set_ylabel("G(r) (barn)"); ax.legend()
     show(fig)
-    caption("At large r the r-dependent broadening is visible: the uncorrected ideal-lattice "
-            "peaks are sharp, the corrected ones spread like the synthetic data's.")
+    caption("At large r the r-dependent broadening is visible: the uncorrected truth-box "
+            "peaks are narrower, the corrected ones spread like the synthetic data's.")
     peak = (x > 7.6) & (x < 8.0)
     check("the corrected column is broader than the uncorrected one at large r",
           calc_b_right[peak].max() < calc_b_none[peak].max())
@@ -158,17 +160,20 @@ if not skip_without_package("the broadening comparison"):
 """),
 
 md(r"""
-## 31. Nano-size: the shape envelope
+## 31. Nano-size: what `PARTICLE_RADIUS` actually changes
 
-In a nanoparticle the number of pairs at distance $r$ is reduced by the fraction that fits
-inside the particle — for a sphere of diameter $D$ the envelope is $f(r) = 1 - \tfrac32
-(r/D) + \tfrac12 (r/D)^3$ (Guinier). It multiplies the *pair* function, so in Keen's
-$G(r) = \sum c_i c_j b_i b_j (g_{ij} - 1)$ it acts on $G - G(0)$ and leaves the baseline
-$G(0) = -(\sum c b)^2$ alone: $G_{\rm nano} = f\,(G - G_0) + G_0$. RMCProfile applies it when
-`PARTICLE_RADIUS ::` is given, and insists on a `BULK_RHO ::` (the bulk number density)
-beside it — without that keyword the program stops with "Low dimension RMC requested. But
-no 'BULK_RHO' keyword found", which the checker now reports before the run (finding P-18).
-Measure the envelope the same way as the damping, then let the right radius win.
+For a particle of diameter $D$ the fraction of pairs at distance $r$ that fit inside it is
+the spherical shape function $f(r) = 1 - \tfrac32 (r/D) + \tfrac12 (r/D)^3$ (Guinier). A
+finite particle also has no uniform surroundings, so in Keen's $G(r) = \sum c_i c_j b_i b_j
+(g_{ij} - 1)$ the "−1" — the bulk baseline $G_0 = -(\sum c b)^2$ — is what a nanoparticle
+lacks beyond its size. RMCProfile's `PARTICLE_RADIUS ::` (manual §4.1; it insists on a
+`BULK_RHO ::`, the bulk number density, beside it — without that keyword the program stops
+with "Low dimension RMC requested. But no 'BULK_RHO' keyword found", which the checker now
+reports before the run, finding P-18) is documented with one line and a paper "to be
+published". So measure it as in §29: the difference between the calculated columns of the
+same box with and without the keyword. It is not a multiplication of the peaks by $f$; it
+is $-G_0\,[1 - f(r)]$ — the bulk baseline replaced by the envelope-weighted one — beyond a
+short-distance cutoff below which nothing changes (the `NANO_RCUTOFF_OFF` keyword's realm).
 """),
 
 code(r"""
@@ -176,34 +181,37 @@ def sphere_envelope(r, D):
     x = np.clip(r / D, 0, 1)
     return 1 - 1.5 * x + 0.5 * x ** 3
 
-D = 20.0
-env = sphere_envelope(r, D)
-G_nano = env * (G_truth - G0) + G0
-check("the envelope is 1 at r = 0 and 0 at r = D", sphere_envelope(np.array([0.0]), D)[0] == 1.0 and sphere_envelope(np.array([D]), D)[0] == 0.0)
-check("at r = D/2 the envelope is 5/16", abs(sphere_envelope(np.array([D / 2]), D)[0] - 5 / 16) < 1e-12)
-if not skip_without_package("the nano-size comparison"):
-    nano_keys = [("PARTICLE_RADIUS", f"{D / 2:.1f}"), ("BULK_RHO", f"{cfg.density:.6f}")]
-    chi_n_none, x, calc_n_none, expt_n = evaluate("nano_none", G_nano)
-    chi_n_right, _, calc_n_right, _ = evaluate("nano_right", G_nano, scalars=nano_keys)
-    chi_n_wrong, _, calc_n_wrong, _ = evaluate("nano_wrong", G_nano, scalars=[("PARTICLE_RADIUS", "5.0"), ("BULK_RHO", f"{cfg.density:.6f}")])
-    peaks = np.abs(calc_n_none - G0) > 0.5             # where G - G0 is large enough to divide
-    ratio_n = (calc_n_right[peaks] - G0) / (calc_n_none[peaks] - G0)
-    dev_n = np.max(np.abs(ratio_n - sphere_envelope(x[peaks], D)))
-    fig, axes = plt.subplots(1, 2, figsize=(10, 3.8))
-    axes[0].plot(r, env, label=f"sphere envelope, D = {D:.0f} Å")
-    axes[0].plot(x[peaks], ratio_n, "k.", ms=4, label="(calc_nano − G₀)/(calc_bulk − G₀), RMCProfile")
-    axes[0].set_xlabel("r (Å)"); axes[0].legend()
-    axes[1].plot(x, expt_n, "k", lw=0.8, label="nano 'data'")
-    axes[1].plot(x, calc_n_none, lw=0.8, alpha=0.7, label="bulk model")
-    axes[1].plot(x, calc_n_right, lw=0.8, label="PARTICLE_RADIUS 10 Å")
-    axes[1].set_xlim(2, 8); axes[1].set_xlabel("r (Å)"); axes[1].set_ylabel("G(r) (barn)"); axes[1].legend()
+check("the envelope is 1 at r = 0 and 0 at r = D", sphere_envelope(np.array([0.0]), 20.0)[0] == 1.0 and sphere_envelope(np.array([20.0]), 20.0)[0] == 0.0)
+check("at r = D/2 the envelope is 5/16", abs(sphere_envelope(np.array([10.0]), 20.0)[0] - 5 / 16) < 1e-12)
+if not skip_without_package("the nano-size measurement"):
+    fig, ax = plt.subplots()
+    devs = {}
+    for R, style in ((10.0, "C0"), (5.0, "C3")):
+        _, x, calc_R, _ = evaluate(f"nano_R{R:.0f}", G_truth, scalars=[("PARTICLE_RADIUS", f"{R:.1f}"), ("BULK_RHO", f"{cfg.density:.6f}")])
+        diff = calc_R - calc_ref
+        hyp = -G0 * (1 - sphere_envelope(x, 2 * R))
+        far = x > 3.5
+        devs[R] = np.sqrt(np.mean((diff[far] - hyp[far]) ** 2))
+        ax.plot(x, diff, style, lw=0.8, label=f"calc(PARTICLE_RADIUS {R:.0f}) − calc(bulk)")
+        ax.plot(x, hyp, style + "--", lw=1.0, label=f"−G₀ [1 − f(r)], D = {2 * R:.0f} Å")
+        print(f"R = {R:.0f} Å: rms of (difference − hypothesis) beyond 3.5 Å = {devs[R]:.4f} barn; the difference is zero below {x[np.argmax(np.abs(diff) > 1e-6)]:.2f} Å")
+    ax.set_xlabel("r (Å)"); ax.set_ylabel("G(r) difference (barn)"); ax.legend(fontsize=8)
     show(fig)
-    caption("Left: the spherical shape function for a 20 Å particle and the envelope RMCProfile "
-            "actually applies (measured at the peaks as the ratio of the calculated columns with "
-            "and without PARTICLE_RADIUS, baseline removed). Right: the synthetic nanoparticle "
-            "G(r) against the bulk model and the corrected one.")
-    check("RMCProfile's envelope is the spherical shape function to 5 %", dev_n < 0.05, f"max deviation {dev_n:.3f}")
-    check("the right radius gives the lowest chi2 of the three", chi_n_right < chi_n_none and chi_n_right < chi_n_wrong,
+    caption("What PARTICLE_RADIUS adds to RMCProfile's calculated G(r) of the same box for "
+            "radii of 10 and 5 Å (solid), against the bulk baseline −G₀ multiplied by one "
+            "minus the spherical shape function of a particle of diameter 2R (dashed): the "
+            "keyword replaces the uniform background, not the peaks, and does nothing below "
+            "the closest approach.")
+    check("beyond 3.5 Å the change is −G₀[1 − f(r)] with D = 2R to 0.02 barn for both radii", all(v < 0.02 for v in devs.values()),
+          ", ".join(f"R={R:.0f}: {v:.4f}" for R, v in devs.items()))
+
+    # consistency: data built with the same rule, and the right radius wins the chi2 comparison
+    D = 20.0
+    G_nano = G_truth - G0 * (1 - sphere_envelope(r, D))
+    chi_n_none = evaluate("nano_none", G_nano)[0]
+    chi_n_right = evaluate("nano_right", G_nano, scalars=[("PARTICLE_RADIUS", f"{D / 2:.1f}"), ("BULK_RHO", f"{cfg.density:.6f}")])[0]
+    chi_n_wrong = evaluate("nano_wrong", G_nano, scalars=[("PARTICLE_RADIUS", "5.0"), ("BULK_RHO", f"{cfg.density:.6f}")])[0]
+    check("against data built with that rule the right radius gives the lowest chi2", chi_n_right < chi_n_none and chi_n_right < chi_n_wrong,
           f"none {chi_n_none:.4g}, right {chi_n_right:.4g}, wrong {chi_n_wrong:.4g}")
 """),
 
@@ -215,6 +223,10 @@ plot χ² against α. Where is the minimum, and how sharp is it?
 
 **7.2** Apply both damping (α = 0.05) and broadening (β = 0.02) to the synthetic data and
 show that the two corrections together beat either alone.
+
+**7.3** (no code) The measurement of §31 was made on a *bulk* box. Why is the baseline, and
+not the peak height, what a nanoparticle configuration in a large box needs corrected? Think
+about which pairs the box's own histogram already lacks.
 """),
 
 code(r"""

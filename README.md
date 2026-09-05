@@ -57,7 +57,7 @@ python scripts/rmclite.py fit average.rmc6f --target out/truth_target_PDFpartial
 
 ## What is verified
 
-- Suite of 146 checks (`python -m pytest tests -q`), pyflakes clean; the
+- Suite of 255 tests (`python -m pytest tests -q`) plus the 117 `check(...)` lines of the eleven chapters, pyflakes clean; the
   package-bound tests (real smoke test, layout) skip without
   `RMCPROFILE_HOME` and pass with either build.
 - Both 6.7.9 builds installed and every shipped tutorial exercise run from
@@ -78,11 +78,31 @@ python scripts/rmclite.py fit average.rmc6f --target out/truth_target_PDFpartial
 - Formats round-trip on synthetic fixtures and were corrected against the
   real files the package writes (see `references/pitfalls.md`).
 
+## The book
+
+Eleven executed notebooks in [`chapters/`](chapters/README.md) — §1–40, from
+the pair distribution function to a refined box, every number computed in
+the notebook and checked against a known answer. One figure per chapter:
+
+<!-- gallery:start -->
+| Chapter | Figure | Caption |
+|---|---|---|
+| [Total scattering and the pair distribution function](chapters/RMCProfile_01_Total_Scattering_and_the_PDF.ipynb) | ![Total scattering and the pair distribution function](docs/figures/RMCProfile_01_Total_Scattering_and_the_PDF.png) |  |
+| [The Reverse Monte Carlo algorithm](chapters/RMCProfile_02_The_RMC_Algorithm.ipynb) | ![The Reverse Monte Carlo algorithm](docs/figures/RMCProfile_02_The_RMC_Algorithm.png) |  |
+| [Starting configurations and the rmc6f file](chapters/RMCProfile_03_Starting_Configurations.ipynb) | ![Starting configurations and the rmc6f file](docs/figures/RMCProfile_03_Starting_Configurations.png) |  |
+| [Fitting neutron F(Q) and G(r) with RMCProfile](chapters/RMCProfile_04_Fitting_Neutron_Data.ipynb) | ![Fitting neutron F(Q) and G(r) with RMCProfile](docs/figures/RMCProfile_04_Fitting_Neutron_Data.png) |  |
+| [X-ray data and the Bragg profile](chapters/RMCProfile_05_Xray_and_Bragg.ipynb) | ![X-ray data and the Bragg profile](docs/figures/RMCProfile_05_Xray_and_Bragg.png) |  |
+| [Constraints, restraints and potentials](chapters/RMCProfile_06_Constraints_and_Potentials.ipynb) | ![Constraints, restraints and potentials](docs/figures/RMCProfile_06_Constraints_and_Potentials.png) |  |
+| [Corrections: resolution, Q-damping and nano-size](chapters/RMCProfile_07_Corrections.ipynb) | ![Corrections: resolution, Q-damping and nano-size](docs/figures/RMCProfile_07_Corrections.png) |  |
+| [Magnetic, EXAFS and diffuse scattering](chapters/RMCProfile_08_Magnetic_EXAFS_Diffuse.ipynb) | ![Magnetic, EXAFS and diffuse scattering](docs/figures/RMCProfile_08_Magnetic_EXAFS_Diffuse.png) |  |
+| [Analysing configurations](chapters/RMCProfile_09_Analysing_Configurations.ipynb) | ![Analysing configurations](docs/figures/RMCProfile_09_Analysing_Configurations.png) |  |
+<!-- gallery:end -->
+
 ## Roadmap
 
-X-ray weights and EXAFS parsing, chapter notebooks for every data type,
-the course, the weekly upstream watch, more exercises in the cross-check
-records.
+The course (a semester's worth of lessons built on the chapters), the
+weekly upstream watch, more exercises in the cross-check records, EXAFS
+χ(k) parsing.
 
 ## Licence
 

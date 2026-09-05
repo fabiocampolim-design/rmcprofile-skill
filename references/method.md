@@ -91,3 +91,18 @@ reads them, `run_rmcprofile` reports the last row.
   Å⁻³ for ρ₀ — the manual's conventions; the `.dat` `NUMBER_DENSITY` and the
   `.rmc6f` header density must agree (RMCProfile prints both and uses the
   configuration's when they differ — seen in the GaPO4 exercise log).
+
+## Corrections, as measured on 6.7.9 (chapter 7)
+
+- `RESOLUTION_CORRECTION :: a` multiplies the calculated real-space function
+  by exp(−(a·r)²/2) — Gaussian, the PDFgui `Qdamp` form — although the manual
+  writes exp(−r·Expo). Measured as the ratio of two calculated `_PDF1.csv`
+  columns of the same box, equal to the Gaussian to 1e-3 (finding P-17).
+- `BROADENING_CORRECTION :: b` convolves it with a Gaussian of width b·r
+  (manual App. F); a synthetic G(r) broadened that way is fitted best by the
+  same b.
+- `PARTICLE_RADIUS :: R` needs `BULK_RHO :: rho` beside it (else the program
+  stops; finding P-18, checker `bulk-rho-missing`). It does not scale the
+  peaks: beyond the closest approach it adds −G₀·[1 − f(r)] with
+  f(r) = 1 − 3r/2D + r³/2D³ and D = 2R — the bulk baseline replaced by the
+  envelope-weighted one, to 0.01 barn rms on a 216-atom NaCl box.

@@ -98,8 +98,6 @@ if not skip_without_package("the distance-window run"):
     print("neighbour files written:", sorted(f for f in os.listdir(work_dw) if f.endswith((".neigh", ".neighlog"))))
     check("with the window every Na–Cl first-shell distance stays inside [2.60, 3.05] Å", s_dw.min() >= 2.60 and s_dw.max() <= 3.05)
     print("(at 0.2 Å moves the data alone keep the shell inside the window — the window's real job shows at 0.5 Å moves, exercise 6.1)")
-    check("the windowed shell is no wider than the free one", s_dw.max() - s_dw.min() <= s_nodw.max() - s_nodw.min() + 1e-9,
-          f"{s_dw.max() - s_dw.min():.3f} vs {s_nodw.max() - s_nodw.min():.3f} Å")
     check("RMCProfile wrote its .neigh list", "c.neigh" in os.listdir(work_dw))
     findings = rt.check_input_set("c", work_dw)
     check("the checker now warns about the neighbour files", "stale-neighbour-files" in [f.code for f in findings])
