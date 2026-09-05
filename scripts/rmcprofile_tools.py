@@ -526,6 +526,12 @@ def check_input_set(stem, directory):
         if not os.path.isfile(fp):
             out.append(Finding("ERROR", "data-file-missing", "%s: %s not found" % (b.name, fn)))
             continue
+        if fn not in os.listdir(d):
+            # exists only case-insensitively (Windows): the same set stops on Linux/macOS
+            # with "does not exist! Hence we have to stop" and exit code 0 (GaPO4 exercise, 2026-09-05)
+            out.append(Finding("WARN", "filename-case",
+                               "%s: %s is named with different letter case on disk; RMCProfile on Linux/macOS will not find it"
+                               % (b.name, fn)))
         if b.name == "EXAFS":
             continue                                  # chi(k) files have their own layout (later plan)
         try:

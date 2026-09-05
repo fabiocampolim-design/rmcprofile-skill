@@ -43,7 +43,8 @@ Codes: `no-dat`, `dat-parse`, `no-configuration`, `rmc6f-parse`,
 `maximum-moves-count`, `data-file-missing`, `data-file-parse`,
 `data-block-no-filename`, `bragg-file-missing`, `bragg-inst-missing`,
 `bragg-back-missing`, `bragg-parse`, `poly-file-missing` (the program would
-wait forever); warnings `end-point-beyond-data`, `no-weight`,
+wait forever); warnings `end-point-beyond-data`, `filename-case` (Linux/macOS
+would not find the file), `no-weight`,
 `hkl-range-unspecified`, `stale-neighbour-files`; info `history-file`,
 `potential-lists-regenerated`, `summary`.
 

@@ -78,6 +78,7 @@ line per finding, `LEVEL code: message`; exit 1 if any ERROR.
 | `bragg-file-missing`, `bragg-inst-missing`, `bragg-back-missing`, `bragg-parse` | ERROR | the `BRAGG ::` block's files |
 | `poly-file-missing` | ERROR | `POLYHEDRAL_RESTRAINT ::` without `STEM.poly` — RMCProfile waits for it forever |
 | `end-point-beyond-data` | WARN | RMCProfile clamps `END_POINT` to the data length |
+| `filename-case` | WARN | the data file exists only with different letter case — fine on Windows, a silent stop (exit code 0) on Linux/macOS |
 | `no-weight`, `hkl-range-unspecified`, `stale-neighbour-files` | WARN | see `references/pitfalls.md` |
 | `history-file`, `potential-lists-regenerated`, `summary` | INFO | |
 

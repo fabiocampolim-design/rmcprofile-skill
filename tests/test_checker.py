@@ -73,6 +73,18 @@ def test_minimum_distance_count_must_match_pairs(tmp_path):
     assert "minimum-distances-count" in _codes(rt.check_input_set("nacl", tmp_path), "ERROR")
 
 
+def test_filename_case_mismatch_is_flagged(tmp_path):
+    """ex_6's neutron .dat names GaPO4_...gr while the file is gapo4_...gr: fine on
+    Windows, a silent stop on Linux (docs/02 P-10). On a case-sensitive filesystem the
+    file is simply missing; on Windows the checker must still warn."""
+    _write_set(tmp_path)
+    t = (tmp_path / "nacl.dat").read_text(encoding="utf-8").replace("FILENAME :: nacl_gr.dat", "FILENAME :: NaCl_GR.dat")
+    (tmp_path / "nacl.dat").write_text(t, encoding="utf-8")
+    codes = _codes(rt.check_input_set("nacl", tmp_path))
+    assert "filename-case" in codes or "data-file-missing" in codes
+    assert "data-file-missing" not in codes or "filename-case" not in codes
+
+
 def test_polyhedral_restraint_needs_its_poly_file(tmp_path):
     """The package waits forever for a missing .poly (audit 2026-09-05)."""
     _write_set(tmp_path)
