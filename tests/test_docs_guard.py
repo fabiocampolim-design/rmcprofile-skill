@@ -16,6 +16,7 @@ from conftest import ROOT
 
 sys.path.insert(0, os.path.join(ROOT, "docs"))
 sys.path.insert(0, os.path.join(ROOT, "build"))
+sys.path.insert(0, os.path.join(ROOT, "course", "tools"))
 
 
 def _read(*parts):
@@ -44,7 +45,8 @@ def test_build_manual_writes_html_without_pandoc(tmp_path, monkeypatch):
 
 
 @pytest.mark.parametrize("module", ["rmcprofile_tools", "verify_rmcprofile", "build_manual", "upstream_adapter", "rmclite",
-                                    "assemble", "execute", "gallery"])
+                                    "assemble", "execute", "gallery", "extract_figures", "build_deck", "make_slides_pdf",
+                                    "verify_deck", "make_handout", "build_pptx"])
 def test_script_flags_and_subcommands_are_documented(module):
     mod = __import__(module)
     agents, manual = _read("AGENTS.md"), _read("docs", "USER_MANUAL.md")

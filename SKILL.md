@@ -4,7 +4,7 @@ description: Set up, check, run and analyse RMCProfile 6.7.9 refinements of neut
 license: Apache-2.0
 ---
 
-# rmcprofile-skill 0.3.0
+# rmcprofile-skill 0.4.0
 
 A Python toolkit around RMCProfile, the Reverse Monte Carlo program for total
 scattering (rmcprofile.ornl.gov). It reads and writes every input and output
@@ -172,4 +172,20 @@ python build/assemble.py --which 07          # regenerate one chapter (unchanged
 RMCPROFILE_HOME=... python build/execute.py --which 07   # execute it on the rmcprofile-mc kernel; PASS/FAIL tally in logs/execute.log
 python build/gallery.py                      # docs/figures + README gallery
 python -m pytest tests/test_notebooks.py -q  # sources, outputs, totals, leaks
+```
+
+## 11. Teach the course
+
+`course/deck/index.html` — eleven lectures (L0 why local structure … L10
+contributing), flat and linear, every chapter figure under its notebook
+caption; `course/slides.pdf` is the same deck without a browser;
+`course/handout/handout.html` the A4 companion; `course/notes/LECTURER_NOTES.md`
+every slide's notes with its anticipated question. Point a lecturer at
+`course/README.md` (syllabus, keys, rebuilding). After re-executing a chapter:
+
+```bash
+python course/tools/extract_figures.py      # figures + provenance (--check to test)
+python course/tools/build_deck.py           # index.html, handout, notes (--check to test)
+python course/tools/make_slides_pdf.py      # slides.pdf (Playwright; committed)
+python -m pytest tests/test_course.py -q
 ```

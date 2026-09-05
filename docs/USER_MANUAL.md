@@ -1,6 +1,6 @@
 # rmcprofile-skill — User Manual
 
-Version 0.3.0. A Python toolkit, AI-agent skill, a clean-room teaching engine
+Version 0.4.0. A Python toolkit, AI-agent skill, a clean-room teaching engine
 and (from later releases) chapter notebooks and a course on Reverse Monte Carlo modelling of total
 scattering data with [RMCProfile](https://rmcprofile.ornl.gov/).
 
@@ -223,7 +223,27 @@ The notebooks are generated — edit `build/part*.py`, never the `.ipynb`:
 executed without errors or `[FAIL]`, matches the pinned totals and leaks no
 local path.
 
-## 9. Troubleshooting
+## 9. The course: `course/`
+
+Eleven lectures on the book — `course/deck/index.html` (reveal.js, offline),
+`course/slides.pdf` (the same deck, one page per slide), `course/handout/handout.html`
+(A4), `course/notes/LECTURER_NOTES.md`. `course/deck/content.en.js` is the only
+file to edit; everything else is generated. `course/README.md` has the syllabus
+and the presenting keys.
+
+| Command | Flags |
+|---|---|
+| `python course/tools/extract_figures.py` — chapter figures → `deck/figs/*.png` + `provenance.json` | `--notebook IPYNB [IPYNB ...]`, `--outdir DIR`, `--check` (exit 1 if stale), `-q` / `--quiet`, `--version` |
+| `python course/tools/build_deck.py` — content → `index.html`, `handout.html`, `LECTURER_NOTES.md` | `--content FILE`, `--check`, `-q`, `--version` |
+| `python course/tools/make_slides_pdf.py` — deck → `slides.pdf` (Playwright) | `--index FILE`, `--out FILE`, `-q`, `--version` |
+| `python course/tools/verify_deck.py` — walk every slide in headless Chromium (Playwright) | `--index FILE`, `--screens DIR`, `--no-screens`, `-q`, `--version` |
+| `python course/tools/make_handout.py` — `handout.html` → `handout.pdf` (Playwright) | `--src FILE`, `--out FILE`, `-q`, `--version` |
+| `python course/tools/build_pptx.py` — one screenshot per slide into a `.pptx` (Playwright + python-pptx) | `--index FILE`, `--out FILE`, `-q`, `--version` |
+
+Optional tooling: `pip install -r course/tools/requirements.txt` then
+`python -m playwright install chromium`.
+
+## 10. Troubleshooting
 
 | Symptom | See |
 |---|---|
@@ -237,7 +257,7 @@ local path.
 
 More in `references/pitfalls.md`.
 
-## 10. Licence
+## 11. Licence
 
 Apache-2.0 (`LICENSE`, `NOTICE`). Independent of and not affiliated with
 the RMCProfile developers or their institutions. RMCProfile is distributed

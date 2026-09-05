@@ -27,3 +27,7 @@ This project is independent and not affiliated with or endorsed by the
 RMCProfile developers, Oak Ridge National Laboratory, the ISIS Neutron and
 Muon Source (STFC), NIST, the University of Oxford, Queen Mary University of
 London or the University of Warsaw.
+
+Third-party software vendored for the course slides (course/shared/reveal/):
+reveal.js 5.2.0, Copyright (C) 2011-2024 Hakim El Hattab and reveal.js
+contributors, MIT License (course/shared/reveal/LICENSE).

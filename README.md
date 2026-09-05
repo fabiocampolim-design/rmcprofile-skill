@@ -98,11 +98,18 @@ the notebook and checked against a known answer. One figure per chapter:
 | [Analysing configurations](chapters/RMCProfile_09_Analysing_Configurations.ipynb) | ![Analysing configurations](docs/figures/RMCProfile_09_Analysing_Configurations.png) |  |
 <!-- gallery:end -->
 
+## The course
+
+Eleven lectures on the book, in [`course/`](course/README.md): a flat
+reveal.js deck (`course/deck/index.html`), the same deck as a PDF
+(`course/slides.pdf`), an A4 handout and lecturer notes. Every one of the 24
+chapter figures appears under its full notebook caption; every number on a
+slide was printed by a chapter cell.
+
 ## Roadmap
 
-The course (a semester's worth of lessons built on the chapters), the
-weekly upstream watch, more exercises in the cross-check records, EXAFS
-χ(k) parsing.
+The weekly upstream watch, more exercises in the cross-check records,
+EXAFS χ(k) parsing, an F(Q) cross-check.
 
 ## Licence
 

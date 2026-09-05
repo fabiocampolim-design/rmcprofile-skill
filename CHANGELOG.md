@@ -2,6 +2,11 @@
 
 All notable changes to rmcprofile-skill. Format: Keep a Changelog; versions: SemVer.
 
+## [0.4.0] — 2026-09-05
+
+### Added
+- The course (playbook rule 22): `course/` — eleven lectures L0–L10 (56 slides, 10 dividers) as a flat reveal.js deck (`deck/index.html`, vendored reveal.js 5.2.0 MIT), an A4 handout, lecturer notes with an anticipated question per slide, and the committed PDF fallback `course/slides.pdf` (66 pages). Every one of the 24 chapter figures appears under its full notebook caption with section and cell; `course/deck/content.en.js` is the single source. Tools: `extract_figures.py` (figures + `provenance.json` with SHA-256, `--check`), `build_deck.py` (`--check`), `make_slides_pdf.py`, `verify_deck.py`, `make_handout.py`, `build_pptx.py` (the last four need Playwright, `course/tools/requirements.txt`). `tests/test_course.py` guards content, provenance, generated outputs, the PDF page count, the licence and leaks.
+
 ## [0.3.0] — 2026-09-05
 
 ### Added

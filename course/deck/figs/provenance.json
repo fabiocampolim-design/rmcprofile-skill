@@ -1,0 +1,256 @@
+{
+ "notebooks": [
+  "RMCProfile_01_Total_Scattering_and_the_PDF.ipynb",
+  "RMCProfile_02_The_RMC_Algorithm.ipynb",
+  "RMCProfile_03_Starting_Configurations.ipynb",
+  "RMCProfile_04_Fitting_Neutron_Data.ipynb",
+  "RMCProfile_05_Xray_and_Bragg.ipynb",
+  "RMCProfile_06_Constraints_and_Potentials.ipynb",
+  "RMCProfile_07_Corrections.ipynb",
+  "RMCProfile_08_Magnetic_EXAFS_Diffuse.ipynb",
+  "RMCProfile_09_Analysing_Configurations.ipynb",
+  "RMCProfile_10_Benchmarks_and_Ecosystem.ipynb"
+ ],
+ "figures": {
+  "s01-f1.png": {
+   "chapter": "RMCProfile_01_Total_Scattering_and_the_PDF.ipynb",
+   "section": 1,
+   "heading": "Partial pair distribution functions",
+   "cell": 3,
+   "figure": 1,
+   "caption": "Partial pair distribution functions of the ideal NaCl lattice: every interatomic distance is a delta function on RMCProfile's r grid. The first Na–Cl shell sits at a/2 = 2.82 Å, the first Na–Na and Cl–Cl shells at a/√2 = 3.99 Å.",
+   "sha256": "d9b6ffabc1cfdc4d9e9841bfb5d71baf3b170d02e0ee31c384ce3353bb440d4b",
+   "bytes": 20493
+  },
+  "s02-f1.png": {
+   "chapter": "RMCProfile_01_Total_Scattering_and_the_PDF.ipynb",
+   "section": 2,
+   "heading": "Thermal motion broadens the peaks",
+   "cell": 5,
+   "figure": 2,
+   "caption": "The Na–Cl partial of the thermally displaced box (0.05 Å per coordinate) against the ideal lattice's: the shells broaden into peaks of width ≈ 0.07 Å, the coordination numbers under them do not change.",
+   "sha256": "d3c72687eaa16494a96d67223b06b3569f51625f4510d5e280d5fb1cb83b31fa",
+   "bytes": 33308
+  },
+  "s03-f1.png": {
+   "chapter": "RMCProfile_01_Total_Scattering_and_the_PDF.ipynb",
+   "section": 3,
+   "heading": "Keen's total functions: G(r), D(r), T(r) and their limits",
+   "cell": 7,
+   "figure": 3,
+   "caption": "Keen's three real-space functions for the thermal NaCl box. G(r) starts at −(Σ c b)² (dotted), D(r) = 4πrρ₀G(r) starts at zero with a negative slope, and T(r) oscillates about the straight line 4πrρ₀(Σ c b)² (dotted).",
+   "sha256": "3853bed3c5a3f0dab654b007379553953025b91ef4dcbcfaead433524787b7c7",
+   "bytes": 53391
+  },
+  "s04-f1.png": {
+   "chapter": "RMCProfile_01_Total_Scattering_and_the_PDF.ipynb",
+   "section": 4,
+   "heading": "Into reciprocal space: F(Q), the Faber–Ziman partials and the box's ringing",
+   "cell": 9,
+   "figure": 4,
+   "caption": "Top: F(Q) of the thermal box by the direct transform and through the Faber–Ziman partials — identical. Bottom: the same function from a 5 Å cut of the box: what the cut removes is the transform of G(r) between 5 and 8 Å, a ripple whose Q-period is set by those shells — the reason RMCProfile convolves the data with the box function rather than pretending the model reaches infinity.",
+   "sha256": "90cb17841f2e6fad6564b512bfee74f6a0613031a11977a9d06ee47588cf23e2",
+   "bytes": 76499
+  },
+  "s07-f1.png": {
+   "chapter": "RMCProfile_02_The_RMC_Algorithm.ipynb",
+   "section": 7,
+   "heading": "The fit: from the average structure to the data",
+   "cell": 8,
+   "figure": 5,
+   "caption": "Left: χ² against generated moves for a fit from the ideal NaCl lattice toward the partials of a thermally displaced box. Right: the Na–Cl partial of the fit against its target after 6000 moves.",
+   "sha256": "4fe772fef3dcf33851c434f3e11c45462a9a87eb9ac7006fd3625ff9420c3f30",
+   "bytes": 40739
+  },
+  "s12-f1.png": {
+   "chapter": "RMCProfile_03_Starting_Configurations.ipynb",
+   "section": 12,
+   "heading": "Folding back, averaging, exporting",
+   "cell": 7,
+   "figure": 6,
+   "caption": "The 216 Sr atoms of the thermal SrTiO₃ box folded back into one unit cell and projected on the ab plane: a Gaussian cloud around the site whose width is the displacement amplitude put in (0.06 Å per coordinate).",
+   "sha256": "33f40d3645700429760f606adc6a910aba483af117dd84b63e869f1ab3a5411b",
+   "bytes": 23464
+  },
+  "s15-f1.png": {
+   "chapter": "RMCProfile_04_Fitting_Neutron_Data.ipynb",
+   "section": 15,
+   "heading": "One pass: RMCProfile computes what we compute",
+   "cell": 5,
+   "figure": 7,
+   "caption": "Before any move: the synthetic G(r) 'data' (thermal box plus noise) against RMCProfile's calculated G(r) of the ideal-lattice starting box, read back from its _PDF1.csv. The delta-sharp lattice peaks must broaden into the data's.",
+   "sha256": "07a08c5c2815d3fcf8bfb635baed2779a46d8311010b5313c1d8778c14be7ecc",
+   "bytes": 26464
+  },
+  "s16-f1.png": {
+   "chapter": "RMCProfile_04_Fitting_Neutron_Data.ipynb",
+   "section": 16,
+   "heading": "The refinement",
+   "cell": 7,
+   "figure": 8,
+   "caption": "After 30 s of RMCProfile moves on the synthetic NaCl set: the calculated G(r) (left) and F(Q) (right) against the data they were fitted to.",
+   "sha256": "15aa044cbbb70cc2596955e1638f84668918f8f062cfb626671ad42f328016ce",
+   "bytes": 69396
+  },
+  "s17-f1.png": {
+   "chapter": "RMCProfile_04_Fitting_Neutron_Data.ipynb",
+   "section": 17,
+   "heading": "`CONVOLVE ::` and the finite box",
+   "cell": 9,
+   "figure": 9,
+   "caption": "Residual of the reciprocal-space fit of the refined box with and without CONVOLVE ::. Without it the data keep their sharp features while the model, cut at the half box, rings — the residual at high Q grows.",
+   "sha256": "4ce1a01b8516fa7df382bd5bfe58fed458718453ce5be6d239941799461e2aec",
+   "bytes": 61073
+  },
+  "s18-f1.png": {
+   "chapter": "RMCProfile_04_Fitting_Neutron_Data.ipynb",
+   "section": 18,
+   "heading": "The same data through `rmclite`",
+   "cell": 11,
+   "figure": 10,
+   "caption": "The same synthetic data reproduced by rmclite after 8000 moves from the ideal lattice; rmclite fitted the three partials, RMCProfile in §16 fitted the total G(r) and F(Q).",
+   "sha256": "eae01c00fefe218e9c5861e04f453565ff7935ca34244d9b659b5f8855487142",
+   "bytes": 37019
+  },
+  "s19-f1.png": {
+   "chapter": "RMCProfile_05_Xray_and_Bragg.ipynb",
+   "section": 19,
+   "heading": "X-rays see electrons: the form factor",
+   "cell": 3,
+   "figure": 11,
+   "caption": "X-ray atomic form factors of Na and Cl from the Cromer–Mann tables: Z electrons at Q = 0, falling with Q; the ratio between them is not constant, so an X-ray F(Q) mixes the partials with Q-dependent weights.",
+   "sha256": "ae1cbab2e4b4a36b63ef36c92899a48687c1dddb4905d5c02efc1e53ed947e6c",
+   "bytes": 29994
+  },
+  "s20-f1.png": {
+   "chapter": "RMCProfile_05_Xray_and_Bragg.ipynb",
+   "section": 20,
+   "heading": "Contrast: the same box, two radiations",
+   "cell": 5,
+   "figure": 12,
+   "caption": "Left: the neutron and X-ray total scattering functions of the same thermal NaCl box. Right: the X-ray weights of the three partials along Q (solid) and the neutron ones (dotted, normalised): X-rays weigh Cl–Cl less and Na–Cl more than neutrons do, and the balance drifts with Q.",
+   "sha256": "9d7dd3b2dbd0545e4f630b1e0d298923d41e5ac8c3743522350d5ab253c86312",
+   "bytes": 71715
+  },
+  "s21-f1.png": {
+   "chapter": "RMCProfile_05_Xray_and_Bragg.ipynb",
+   "section": 21,
+   "heading": "An X-ray run of RMCProfile, and what it does not confirm",
+   "cell": 7,
+   "figure": 13,
+   "caption": "RMCProfile's X-ray F(Q) of the ideal NaCl lattice against the toolkit's for the same box and the synthetic data: same scale and peak positions, a shape that agrees only in part — the open question of finding N-8.",
+   "sha256": "0bed3ef3b565ba79e59b6816939ef7b902537853ab66c22f2681b1057f34c5ea",
+   "bytes": 62823
+  },
+  "s22-f1.png": {
+   "chapter": "RMCProfile_05_Xray_and_Bragg.ipynb",
+   "section": 22,
+   "heading": "Bragg profiles: the long-range order",
+   "cell": 9,
+   "figure": 14,
+   "caption": "The Bragg profile of the package's SF₆ exercise (bank data, black) and RMCProfile's calculated profile for the shipped configuration (red), with their difference: the average structure of the 4 320-atom box, fitted together with G(r) and F(Q).",
+   "sha256": "88fc428a2fe8c4778cbd13dad5ca767392ab78664d1d355e2154f0d7693592c5",
+   "bytes": 29226
+  },
+  "s24-f1.png": {
+   "chapter": "RMCProfile_06_Constraints_and_Potentials.ipynb",
+   "section": 24,
+   "heading": "Closest approach: `MINIMUM_DISTANCES`",
+   "cell": 5,
+   "figure": 15,
+   "caption": "The Na–Cl first-shell distances of two refined boxes: with the closest approach at 2.2 Å the thermal shell is reproduced on both sides of 2.82 Å; with it at 2.75 Å (dotted) no bond can be shorter, and the distribution is cut off there.",
+   "sha256": "aa7cbbe7c2a41ebbc9d7cc26f907d38a7c36c97113551ae625f6da03c8aa5079",
+   "bytes": 21219
+  },
+  "s27-f1.png": {
+   "chapter": "RMCProfile_06_Constraints_and_Potentials.ipynb",
+   "section": 27,
+   "heading": "Bond valence sums",
+   "cell": 11,
+   "figure": 16,
+   "caption": "Bond valence sums of the 108 Na atoms in the box refined under RMCProfile's BVS restraint, computed with the toolkit's own calculator (R₀ = 2.15 Å, b = 0.37 Å, cutoff 3.2 Å): centred on +1, the nominal valence.",
+   "sha256": "9a42b1460f4c4172d1366309db2977c9ea2acaddcee469d6fe7aa995cfe1a60f",
+   "bytes": 13688
+  },
+  "s29-f1.png": {
+   "chapter": "RMCProfile_07_Corrections.ipynb",
+   "section": 29,
+   "heading": "Damping: `RESOLUTION_CORRECTION` — measured, not assumed",
+   "cell": 5,
+   "figure": 17,
+   "caption": "The damping RMCProfile applies for RESOLUTION_CORRECTION 0.20, measured as the ratio of two calculated G(r) columns of the same box: a Gaussian in r, not the exponential the manual writes.",
+   "sha256": "c9a60f1f857b622af6b2dcd0f937cf7c22d5151d6100722a93d834587e288ff2",
+   "bytes": 39422
+  },
+  "s29-f2.png": {
+   "chapter": "RMCProfile_07_Corrections.ipynb",
+   "section": 29,
+   "heading": "Damping: `RESOLUTION_CORRECTION` — measured, not assumed",
+   "cell": 7,
+   "figure": 18,
+   "caption": "Synthetic G(r) damped by exp(−(0.05 r)²/2) against RMCProfile's calculated G(r) of the truth box without and with the matching RESOLUTION_CORRECTION: the corrected model's peaks shrink with r the way the data's do.",
+   "sha256": "691677bb97ee474b6fc24e1eb5e4a9a3d6f7b6998dd61420e6a02385101d76c2",
+   "bytes": 43381
+  },
+  "s30-f1.png": {
+   "chapter": "RMCProfile_07_Corrections.ipynb",
+   "section": 30,
+   "heading": "Broadening: `BROADENING_CORRECTION`",
+   "cell": 9,
+   "figure": 19,
+   "caption": "At large r the r-dependent broadening is visible: the uncorrected truth-box peaks are narrower, the corrected ones spread like the synthetic data's.",
+   "sha256": "942abea116ffb45276cc9a798df5d31520d96e96f8152ee39ac153ff0eb56b73",
+   "bytes": 38779
+  },
+  "s31-f1.png": {
+   "chapter": "RMCProfile_07_Corrections.ipynb",
+   "section": 31,
+   "heading": "Nano-size: what `PARTICLE_RADIUS` actually changes",
+   "cell": 11,
+   "figure": 20,
+   "caption": "What PARTICLE_RADIUS adds to RMCProfile's calculated G(r) of the same box for radii of 10 and 5 Å (solid), against the bulk baseline −G₀ multiplied by one minus the spherical shape function of a particle of diameter 2R (dashed): the keyword replaces the uniform background, not the peaks, and does nothing below the closest approach.",
+   "sha256": "5e4b8946c04513c1055758a937317f3a7682cfe3e15f4cacbc51e37bdf3bb240",
+   "bytes": 46875
+  },
+  "s32-f1.png": {
+   "chapter": "RMCProfile_08_Magnetic_EXAFS_Diffuse.ipynb",
+   "section": 32,
+   "heading": "Beyond the pair distribution",
+   "cell": 3,
+   "figure": 21,
+   "caption": "The two EXAFS edges of the package's SnO exercise (Nb and Sr absorbers) in r space: the data and RMCProfile's calculation for the shipped starting configuration, evaluated with no moves.",
+   "sha256": "777a090226b5de67c628fe29bd1910d238ad1218c512b68260209407aabaae35",
+   "bytes": 68818
+  },
+  "s36-f1.png": {
+   "chapter": "RMCProfile_09_Analysing_Configurations.ipynb",
+   "section": 36,
+   "heading": "Coordination numbers and bond lengths",
+   "cell": 5,
+   "figure": 22,
+   "caption": "Coordination-number histogram of the refined NaCl box: every one of the 108 Na atoms keeps its six Cl neighbours — thermal motion broadens shells, it does not change coordination in a close-packed ionic crystal.",
+   "sha256": "e118c4c1e5b63a3161be5f9db0af2aacf2d59a7938224a6fb00c85ed0223460b",
+   "bytes": 15267
+  },
+  "s37-f1.png": {
+   "chapter": "RMCProfile_09_Analysing_Configurations.ipynb",
+   "section": 37,
+   "heading": "Bond angles and displacement clouds",
+   "cell": 7,
+   "figure": 23,
+   "caption": "Left: the Cl–Na–Cl angle distribution of the refined box (filled) and of the truth box (line): two peaks at 90° and 180° broadened by the thermal displacements. Right: the displacement of each of the 108 Na atoms from its ideal site, projected on ab — the displacement cloud of the Na site.",
+   "sha256": "a0381b00cfe6ed1705f92be839e9e3f9b07cb82194966c0fac3c2162c1b9880c",
+   "bytes": 27797
+  },
+  "s38-f1.png": {
+   "chapter": "RMCProfile_09_Analysing_Configurations.ipynb",
+   "section": 38,
+   "heading": "Ensembles: several fits are better than one",
+   "cell": 9,
+   "figure": 24,
+   "caption": "Four rmclite fits of the same synthetic data from different seeds (thin) and their mean (red) against the target (black): averaging over an ensemble beats any single box, and the spread between boxes is the error bar.",
+   "sha256": "d1c56901daabaed29499c7558c29e3338a13c90ebc796a25b8a253da556808ed",
+   "bytes": 28566
+  }
+ }
+}

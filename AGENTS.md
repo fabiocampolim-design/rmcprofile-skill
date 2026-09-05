@@ -72,6 +72,18 @@ PASS/FAIL without executing), `-v`, `-q`; the tally goes to
 `logs/execute.log`. `python build/gallery.py` writes `docs/figures/*.png` and
 the README gallery block — `--check` (exit 1 if the block is stale).
 
+The course (`course/`, rule 22): `python course/tools/extract_figures.py` —
+`--notebook IPYNB [IPYNB ...]`, `--outdir DIR`, `--check`, `-q` / `--quiet`,
+`--version`; `python course/tools/build_deck.py` — `--content FILE`, `--check`,
+`-q`, `--version`; `python course/tools/make_slides_pdf.py` — `--index FILE`,
+`--out FILE`, `-q`, `--version` (Playwright); `python course/tools/verify_deck.py`
+— `--index FILE`, `--screens DIR`, `--no-screens`, `-q`, `--version` (Playwright);
+`python course/tools/make_handout.py` — `--src FILE`, `--out FILE`, `-q`,
+`--version` (Playwright); `python course/tools/build_pptx.py` — `--index FILE`,
+`--out FILE`, `-q`, `--version` (Playwright + python-pptx). Order after a
+chapter changes: execute → extract_figures → build_deck → make_slides_pdf →
+`pytest tests/test_course.py`.
+
 Installers: `scripts/install_rmcprofile_windows.ps1 [-DryRun] [-Conda path]`,
 `scripts/install_rmcprofile.sh [--dry-run] [--conda path]` — conda env
 `rmcprofile`, kernel `rmcprofile-mc`, explicit per-step status.

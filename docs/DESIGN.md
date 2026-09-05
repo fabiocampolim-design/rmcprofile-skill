@@ -73,15 +73,24 @@ together with a small clean-room RMC engine for teaching.
    (the X-ray F(Q) shape, magnetic and diffuse fits) it says so in the
    chapter rather than lowering a threshold until a check passes.
 
-## What was deliberately left out of 0.3.0
+11. **The course is generated from one file and every figure is the
+   notebook's.** `course/deck/content.en.js` holds lectures, slide order,
+   levels and notes; `build_deck.py` renders the deck, handout and notes,
+   `extract_figures.py` pulls the chapter figures with their captions and
+   hashes, and the suite refuses a figure that no longer matches a notebook
+   output or a notebook figure that no slide shows. Numbers on slides are
+   numbers the chapters printed (the cross-check precision, the measured
+   correction forms, the X-ray correlation) — the course cannot claim more
+   than the book verified.
+
+## What was deliberately left out of 0.4.0
 
 EXAFS χ(k) computation and magnetic / diffuse-scattering models (chapter 8
 runs the shipped EXAFS exercise and documents the other two); `.bvs`,
 `.bonds`, `.triplets` readers; an F(Q) cross-check (RMCProfile convolves
 F(Q) with the box function) and the X-ray F(Q) processing (finding N-8);
 the `rmc_tools` parser comparison (its conda package ships Python 3.7
-builds only); the course and the weekly upstream watch script (next
-releases).
+builds only); the weekly upstream watch script (next release).
 
 ## Verified with
 
