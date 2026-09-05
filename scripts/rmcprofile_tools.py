@@ -704,14 +704,29 @@ def _min_image_distances(cfg):
     return r
 
 
-def partial_gr(cfg, rmax=20.0, dr=0.02):
+def rmc_grid(rmax, dr):
+    """RMCProfile's r grid: r_k = k*dr (k >= 1) up to rmax, bins centred on r_k."""
+    n = int(np.floor(rmax / dr + 1e-9))
+    r = dr * np.arange(1, n + 1)
+    edges = np.concatenate([[max(0.0, r[0] - dr / 2)], r + dr / 2])
+    return r, edges
+
+
+def partial_gr(cfg, rmax=20.0, dr=0.02, grid="rmcprofile"):
     """Partial pair distribution functions g_ij(r) by histogram, normalised to 1 at large r.
-    Minimum image only: rmax must be below half the shortest cell edge."""
+    grid="rmcprofile": r_k = k*dr with bins centred on r_k (equals RMCProfile's _PDFpartials.csv);
+    grid="centre": bins [k dr, (k+1) dr) labelled by their centre. Minimum image only: rmax must
+    be below half the shortest cell edge."""
     L = min(np.linalg.norm(cfg.lattice, axis=1))
-    if rmax > L / 2:
+    if rmax > L / 2 + 1e-9:
         raise ValueError("rmax %.2f exceeds half the shortest cell edge (%.2f): enlarge the supercell" % (rmax, L / 2))
-    r = np.arange(dr / 2, rmax, dr)
-    edges = np.arange(0.0, rmax + dr, dr)[: len(r) + 1]
+    if grid == "rmcprofile":
+        r, edges = rmc_grid(rmax, dr)
+    elif grid == "centre":
+        r = np.arange(dr / 2, rmax, dr)
+        edges = np.arange(0.0, rmax + dr, dr)[: len(r) + 1]
+    else:
+        raise ValueError("grid must be 'rmcprofile' or 'centre'")
     dist = _min_image_distances(cfg)
     V = abs(np.linalg.det(cfg.lattice))
     types = cfg.atom_types
@@ -808,7 +823,7 @@ def _analysis_main(args, argv):
     os.makedirs(args.outdir, exist_ok=True)
     extra = {"rmc6f": args.rmc6f, "n_atoms": cfg.n_atoms()}
     if args.cmd == "pdf":
-        r, parts = partial_gr(cfg, args.rmax, args.dr)
+        r, parts = partial_gr(cfg, args.rmax, args.dr, grid=args.grid)
         _, G = total_gr(r, parts, cfg, args.radiation)
         q = np.arange(args.dq, args.qmax, args.dq)
         F = fq_from_gr(r, G, cfg.density, q)
@@ -940,6 +955,8 @@ def build_parser():
     p.add_argument("--qmax", type=float, default=30.0, help="largest Q of F(Q) (1/Angstrom)")
     p.add_argument("--dq", type=float, default=0.02, help="Q step")
     p.add_argument("--radiation", choices=["neutron", "xray"], default="neutron", help="weights for G(r)")
+    p.add_argument("--grid", choices=["rmcprofile", "centre"], default="rmcprofile",
+                   help="r grid: RMCProfile's k*dr (default) or bin centres")
     k = sub.add_parser("coord", help="coordination-number histogram for a pair within --rmax", parents=[common])
     k.add_argument("rmc6f")
     k.add_argument("--pair", nargs=2, required=True, metavar=("A", "B"), help="central atom type A, neighbour type B")

@@ -1,0 +1,21 @@
+{
+  "schema": 1,
+  "tool": "rmcprofile-skill",
+  "note": "Cross-check tolerances between our partial g(r) / Keen G(r) and RMCProfile's own CSV output for the same configuration. 'measured' holds our last observed maxima; 'provenance' says which build and date. No package data is stored here.",
+  "exercises": {
+    "ex_1": {
+      "stem": "rmcsf6_190k",
+      "tolerance_partials": 0.001,
+      "tolerance_gofr": 0.0001,
+      "measured": {
+        "partials": {
+          "S-S": 7e-06,
+          "S-F": 0.00028,
+          "F-F": 4.1e-05
+        },
+        "gofr": 2e-05
+      },
+      "provenance": "RMCProfile 6.7.9.5 Windows Serial (CUDA) and Linux 64 (CPU), 2026-09-05, TIME_LIMIT 0; the package computes in single precision (~1e-5 relative), so the absolute tolerance is 1e-3 on partials that peak near 20"
+    }
+  }
+}

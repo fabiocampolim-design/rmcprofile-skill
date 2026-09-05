@@ -15,7 +15,7 @@ package-bound test and check is skipped.
 | global (before or after a subcommand) | `--version`, `--selftest` (round-trip every format on synthetic files, exit 0/1), `--outdir` (default `out`), `--log-dir` (default `logs`), `-q` / `--quiet` |
 | `check` STEM | `--dir` (directory holding the input set, default `.`) |
 | `run` STEM | `--dir`, `--home` (RMCProfile_package directory, default `$RMCPROFILE_HOME`), `--timeout` (minutes; the process is killed and `rc=None` reported) |
-| `pdf` FILE.rmc6f | `--rmax` (default 20.0; must be below half the shortest cell edge), `--dr` (0.02), `--qmax` (30.0), `--dq` (0.02), `--radiation {neutron,xray}` (`xray` raises until the X-ray chapter) |
+| `pdf` FILE.rmc6f | `--rmax` (default 20.0; must be below half the shortest cell edge), `--dr` (0.02), `--qmax` (30.0), `--dq` (0.02), `--radiation {neutron,xray}` (`xray` raises until the X-ray chapter), `--grid {rmcprofile,centre}` (r grid: RMCProfile's k*dr, default, or bin centres) |
 | `coord` FILE.rmc6f | `--pair A B` (required), `--rmax` (required) |
 | `angles` FILE.rmc6f | `--triplet A B C` (required: apex A, arms B and C), `--rmax` (required), `--dangle` (2.0 degrees) |
 

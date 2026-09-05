@@ -32,7 +32,7 @@ import re
 import subprocess
 import sys
 
-VERSION = "1.6.2"
+VERSION = "1.6.3"
 
 TEXT_EXT = {".py", ".md", ".ipynb", ".txt", ".yml", ".yaml", ".json", ".ps1",
             ".bib", ".cff", ".toml", ".cfg", ".ini", ".bat", ".sh", ".html",
@@ -150,6 +150,9 @@ DEFAULT_RULES = [
          applies="all", check="auto", check_ids=["literature-harvest"]),
     dict(id=30, title="A repo that byte-compares any generated artefact pins "
                       "`* text=auto eol=lf` repo-wide, not only the vendored checker",
+         applies="all", check="manual", check_ids=[]),
+    dict(id=31, title="Release only on green: push the branch, wait for its workflow "
+                      "run to pass, then tag -- never tag a red or still-running branch",
          applies="all", check="manual", check_ids=[]),
 ]
 

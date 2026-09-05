@@ -111,7 +111,9 @@ python scripts/rmcprofile_tools.py angles FILE.rmc6f --triplet Na Cl Cl --rmax 3
 - `pdf`: partial g_ij(r) by histogram (minimum image; `--rmax` must be below
   half the shortest cell edge, `--dr` the bin), Keen's G(r) in barn with
   neutron weights (`--radiation {neutron,xray}`; `xray` is reserved for the
-  X-ray chapter), and F(Q) on `--dq` … `--qmax`. Files:
+  X-ray chapter), and F(Q) on `--dq` … `--qmax`. `--grid {rmcprofile,centre}`
+  selects the r grid: RMCProfile's r_k = k·dr with bins centred on r_k (default;
+  equals the program's own `_PDFpartials.csv`) or plain bin centres. Files:
   `<stem>_PDFpartials.csv`, `<stem>_GofR.csv`, `<stem>_FofQ.csv` (same
   layout as RMCProfile's own CSVs, readable with `read_csv_pair` /
   `read_partials_csv`).
