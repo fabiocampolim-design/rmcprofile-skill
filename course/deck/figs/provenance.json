@@ -148,9 +148,9 @@
    "heading": "Bragg profiles: the long-range order",
    "cell": 9,
    "figure": 14,
-   "caption": "The Bragg profile of the package's SF₆ exercise (bank data, black) and RMCProfile's calculated profile for the shipped configuration (red), with their difference: the average structure of the 4 320-atom box, fitted together with G(r) and F(Q).",
-   "sha256": "88fc428a2fe8c4778cbd13dad5ca767392ab78664d1d355e2154f0d7693592c5",
-   "bytes": 29226
+   "caption": "RMCProfile's calculated Bragg profile for the shipped SF₆ configuration — the average structure of the 4 320-atom box, fitted together with G(r) and F(Q). The exercise's measured profile is not reproduced here (it belongs to the package); its agreement with this curve is the correlation printed in the legend.",
+   "sha256": "25bfdb75ccc581215dc92d82701ba6420f5de5afabe7dfe48b96df5fe228d8da",
+   "bytes": 30291
   },
   "s24-f1.png": {
    "chapter": "RMCProfile_06_Constraints_and_Potentials.ipynb",
@@ -218,9 +218,9 @@
    "heading": "Beyond the pair distribution",
    "cell": 3,
    "figure": 21,
-   "caption": "The two EXAFS edges of the package's SnO exercise (Nb and Sr absorbers) in r space: the data and RMCProfile's calculation for the shipped starting configuration, evaluated with no moves.",
-   "sha256": "777a090226b5de67c628fe29bd1910d238ad1218c512b68260209407aabaae35",
-   "bytes": 68818
+   "caption": "The two EXAFS edges of the package's SnO exercise (Nb and Sr absorbers) in r space: RMCProfile's calculation for the shipped starting configuration, evaluated with no moves. The exercise's measured χ(r) is not reproduced here (it belongs to the package); the legend gives the calculation's correlation with it.",
+   "sha256": "56c6c10561292e9fd6338a4bfee3bd4b1bf43ed9e49a9931d3732bacd91ceb3e",
+   "bytes": 56609
   },
   "s36-f1.png": {
    "chapter": "RMCProfile_09_Analysing_Configurations.ipynb",

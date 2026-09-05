@@ -44,13 +44,13 @@ if not skip_without_package("the EXAFS run"):
     fig, axes = plt.subplots(1, 2, figsize=(10, 3.8))
     for ax, name in zip(axes, [o for o in outs if "_R_" in o]):
         x, calc, expt = rt.read_csv_pair(os.path.join(work, name))
-        ax.plot(x, expt, "k", lw=0.8, label="data")
-        ax.plot(x, calc, "C3", lw=0.8, label="RMCProfile, shipped box")
+        ax.plot(x, calc, "C3", lw=0.8, label=f"RMCProfile, calculated (correlation with the data {np.corrcoef(calc, expt)[0, 1]:.3f})")
         ax.set_title(name.split("-")[0] + " edge, r space"); ax.set_xlabel("r (Å)"); ax.legend()
     show(fig)
     caption("The two EXAFS edges of the package's SnO exercise (Nb and Sr absorbers) in r space: "
-            "the data and RMCProfile's calculation for the shipped starting configuration, "
-            "evaluated with no moves.")
+            "RMCProfile's calculation for the shipped starting configuration, evaluated with no "
+            "moves. The exercise's measured χ(r) is not reproduced here (it belongs to the package); "
+            "the legend gives the calculation's correlation with it.")
     check("RMCProfile evaluated both EXAFS edges (EXAFS_1 and EXAFS_2 chi2 rows)", res.returncode == 0 and {"EXAFS_1", "EXAFS_2"} <= set(res.final_chi2))
     check("it wrote a k-space and an r-space CSV per edge", len(outs) == 4)
 """),

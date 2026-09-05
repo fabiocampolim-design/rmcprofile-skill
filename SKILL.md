@@ -4,7 +4,7 @@ description: Set up, check, run and analyse RMCProfile 6.7.9 refinements of neut
 license: Apache-2.0
 ---
 
-# rmcprofile-skill 0.5.0
+# rmcprofile-skill 0.5.1
 
 A Python toolkit around RMCProfile, the Reverse Monte Carlo program for total
 scattering (rmcprofile.ornl.gov). It reads and writes every input and output

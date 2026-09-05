@@ -169,14 +169,13 @@ if not skip_without_package("the Bragg files of the shipped exercise"):
     corr_b = np.corrcoef(calc, expt)[0, 1]
     print("rc", res.returncode, "| chi2 rows:", {k: v for k, v in res.final_chi2.items() if "Bragg" in k or k == "chi2"}, f"| profile correlation {corr_b:.4f}")
     fig, ax = plt.subplots()
-    ax.plot(t, expt, "k", lw=0.6, label="data")
-    ax.plot(t, calc, "C3", lw=0.6, label="RMCProfile, shipped configuration")
-    ax.plot(t, expt - calc - 0.3 * np.abs(expt).max(), "C0", lw=0.5, label="difference (offset)")
-    ax.set_xlabel("time of flight (µs)"); ax.set_ylabel("intensity"); ax.legend()
+    ax.plot(t, calc, "C3", lw=0.6, label=f"RMCProfile, calculated profile (correlation with the data {corr_b:.4f})")
+    ax.set_xlabel("time of flight (µs)"); ax.set_ylabel("calculated intensity"); ax.legend()
     show(fig)
-    caption("The Bragg profile of the package's SF₆ exercise (bank data, black) and RMCProfile's "
-            "calculated profile for the shipped configuration (red), with their difference: "
-            "the average structure of the 4 320-atom box, fitted together with G(r) and F(Q).")
+    caption("RMCProfile's calculated Bragg profile for the shipped SF₆ configuration — the "
+            "average structure of the 4 320-atom box, fitted together with G(r) and F(Q). The "
+            "exercise's measured profile is not reproduced here (it belongs to the package); its "
+            "agreement with this curve is the correlation printed in the legend.")
     check("the four Bragg input files parse (one bank of data, its background and instrument lines)", brg.npoints > 0 and len(back) >= 1 and len(inst) >= 1)
     check("RMCProfile evaluated the profile (a _bragg.csv with the data's point count)", res.returncode == 0 and len(t) == brg.npoints)
     check("the shipped configuration already reproduces the profile (correlation > 0.99)", corr_b > 0.99, f"{corr_b:.4f}")

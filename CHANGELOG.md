@@ -2,6 +2,11 @@
 
 All notable changes to rmcprofile-skill. Format: Keep a Changelog; versions: SemVer.
 
+## [0.5.1] — 2026-09-05
+
+### Changed
+- Chapters 5 (§22) and 8 (§32), and the two course figures built from them, now plot only RMCProfile's *calculated* Bragg profile and EXAFS χ(r) for the shipped exercises, with the correlation to the exercise's measured curve printed in the legend; the measured curves themselves belong to the package and are no longer drawn. First public release.
+
 ## [0.5.0] — 2026-09-05
 
 ### Added
