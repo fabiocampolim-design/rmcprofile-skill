@@ -2,6 +2,11 @@
 
 All notable changes to rmcprofile-skill. Format: Keep a Changelog; versions: SemVer.
 
+## [0.5.3] — 2026-09-05
+
+### Fixed
+- `build/gallery.py` read a `text/markdown` output the notebooks' `caption()` helper never emits, so every README gallery row had an empty caption column; it now parses the `text/html` caption (the same output `extract_figures.py` reads) and the gallery carries the nine captions. Found by the post-release `/code-review`; a test in `tests/test_notebooks.py` guards it.
+
 ## [0.5.2] — 2026-09-05
 
 ### Changed

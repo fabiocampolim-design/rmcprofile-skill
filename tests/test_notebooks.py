@@ -165,3 +165,25 @@ def test_reexecuted_notebook_is_green(key, tmp_path, request):
     assert rc == 0
     t = tally(os.path.join(tmp_path, "chapters", BY_KEY[key].file))
     assert t["fail"] == 0 and t["errors"] == 0
+
+
+def test_gallery_reads_the_notebook_captions():
+    """Review of 0.5.2: gallery.py read a text/markdown output the caption() helper never
+    emits, so every README gallery row had an empty caption column."""
+    sys.path.insert(0, os.path.join(ROOT, "build"))
+    import gallery
+    from assemble import CHAPTERS, CHAPTERS_DIR
+    with_figures = [c for c in CHAPTERS if c.key not in ("00", "10")]
+    for ch in with_figures:
+        fig = gallery.first_figure(os.path.join(ROOT, CHAPTERS_DIR, ch.file))
+        assert fig is not None, ch.file
+        png, caption = fig
+        assert png.startswith(bytes([137, 80, 78, 71])) and len(caption) > 40, (ch.file, caption)
+        assert "<" not in caption and "Figure" not in caption[:8], caption
+    with open(os.path.join(ROOT, "README.md"), encoding="utf-8") as f:
+        readme = f.read()
+    block = readme[readme.index(gallery.START):readme.index(gallery.END)]
+    rows = [ln for ln in block.splitlines() if ln.startswith("| [")]
+    assert len(rows) == len(with_figures)
+    for row in rows:
+        assert len(row.split("|")[3].strip()) > 40, row

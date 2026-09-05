@@ -13,6 +13,7 @@ skipped with a log line, never invented.
 """
 import argparse
 import base64
+import html
 import json
 import os
 import re
@@ -40,10 +41,13 @@ def first_figure(nb_path):
             data = out.get("data", {})
             if png is None and "image/png" in data:
                 png = base64.b64decode("".join(data["image/png"]))
-            if "text/markdown" in data:
-                txt = "".join(data["text/markdown"])
-                m = re.search(r"\*(.+?)\*", txt, re.S)
-                caption = (m.group(1) if m else txt).strip()
+            if "text/html" in data:
+                # the caption() helper renders "<b>Figure N.</b> text</div>" as text/html
+                # (the same output extract_figures.py parses); a text/markdown branch here
+                # left every gallery caption empty (review of 0.5.2)
+                txt = "".join(data["text/html"])
+                m = re.search(r"<b>\s*Figure\s+\d+\.\s*</b>(.*?)</div>", txt, re.S)
+                caption = html.unescape(re.sub(r"<[^>]+>", "", m.group(1) if m else txt)).strip()
         if png is not None:
             return png, caption
     return None
