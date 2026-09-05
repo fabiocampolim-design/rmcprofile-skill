@@ -200,7 +200,7 @@ def test_nothing_from_the_package_in_the_course():
             continue
         with open(path, encoding="utf-8", errors="replace") as f:
             text = f.read()
-        for needle in ("claude-bulk", "/mnt/d/", "RMCProfile_package", "C:\\Users\\", "/home/"):
+        for needle in ("claude-bulk", "/mnt/d/", "RMCProfile_package", "".join(("C:", chr(92), "Users", chr(92))), "/home/"):
             assert needle not in text, (path, needle)
 
 
