@@ -52,8 +52,9 @@ RMCProfile 6.7.9 Windows Serial and Linux 64 builds).
   tarball prints "Use CPU version" with OpenMP threads. On the SF6 exercise
   the Windows build generated 2.5× more moves in the same 10 minutes
   (101 804 vs 41 506) and reached χ² 0.53 where the CPU build was at 38.8 —
-  the runs started from the same χ² (831.9). Compare χ² at equal *moves*, not
-  equal wall time, across builds.
+  the runs started from the same χ² (831.9); on the SrTiO3 293 K exercise the
+  two builds were equal (93 500 vs 90 606). The gap depends on the exercise.
+  Compare χ² at equal *moves*, not equal wall time, across builds.
 - **WSL runs the Linux build from `/mnt/d` without `chmod`** (drvfs marks
   everything executable), but keep the *work directory* on the Linux
   filesystem (`/tmp`, `$HOME`): the periodic saves are I/O-bound and the
