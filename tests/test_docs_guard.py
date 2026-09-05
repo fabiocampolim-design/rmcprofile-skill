@@ -110,3 +110,12 @@ def test_readme_is_the_product_page():
     for section in ("## What it does", "## Install", "## Quick start", "## What is verified", "## Licence", "### Disclaimer"):
         assert section in readme, section
     assert "RMCPROFILE_HOME" in readme and "verify_rmcprofile.py" in readme
+
+
+def test_readme_has_the_comparison_and_the_credit_table():
+    """Rules 2 and 9: the README says honestly what the neighbours do better, and carries the
+    CRediT table of who did what (Fabio's review of the first public release, 2026-09-05)."""
+    readme = _read("README.md")
+    assert "## Honest comparison with neighbours" in readme and "| If you want" in readme
+    assert "## How it was built" in readme and "Role (CRediT)" in readme
+    assert readme.count("| ●") + readme.count("| ○") >= 12

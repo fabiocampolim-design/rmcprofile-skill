@@ -63,13 +63,25 @@ t_mean = np.sum(wgt_t * r[shell]) / np.sum(wgt_t)
 t_std = np.sqrt(np.sum(wgt_t * (r[shell] - t_mean) ** 2) / np.sum(wgt_t))
 print(f"Na–Cl bond: fitted {d_mean:.3f} ± {d_std:.3f} Å, truth {t_mean:.3f} ± {t_std:.3f} Å")
 
-fig, ax = plt.subplots()
-ax.bar(list(hist), list(hist.values()), width=0.6, label="fitted box")
-ax.set_xlabel("Cl neighbours within 3.2 Å of a Na"); ax.set_ylabel("Na atoms"); ax.legend()
+# the running coordination number n(r): Cl neighbours of a Na within r, averaged over the Na atoms
+cutoffs = np.arange(2.0, 6.5, 0.02)
+n_fit = np.array([np.mean(rt.coordination(fitted, "Na", "Cl", rmax=rc)[0]) for rc in cutoffs[::5]])
+n_tru = np.array([np.mean(rt.coordination(truth.to_rmc6f(cfg), "Na", "Cl", rmax=rc)[0]) for rc in cutoffs[::5]])
+fig, axes = plt.subplots(1, 2, figsize=(10, 3.8))
+axes[0].plot(cutoffs[::5], n_fit, "C0", label="fitted box")
+axes[0].plot(cutoffs[::5], n_tru, "k--", label="truth")
+for n_shell, lab in ((6, "first shell: 6 Cl at 2.82 Å"), (14, "next Cl shell: +8 at 4.88 Å")):
+    axes[0].axhline(n_shell, color="gray", lw=0.5); axes[0].text(2.05, n_shell + 0.4, lab, fontsize=8, color="gray")
+axes[0].set_xlabel("cutoff radius r (Å)"); axes[0].set_ylabel("Cl neighbours of a Na within r"); axes[0].legend(loc="upper left")
+axes[1].plot(r_f[shell], wgt / wgt.sum() / 0.02, "C0", label=f"fitted: {d_mean:.3f} ± {d_std:.3f} Å")
+axes[1].plot(r[shell], wgt_t / wgt_t.sum() / 0.02, "k--", label=f"truth: {t_mean:.3f} ± {t_std:.3f} Å")
+axes[1].set_xlabel("Na–Cl distance (Å)"); axes[1].set_ylabel("bond-length distribution (Å⁻¹)"); axes[1].legend()
 show(fig)
-caption("Coordination-number histogram of the refined NaCl box: every one of the 108 Na atoms "
-        "keeps its six Cl neighbours — thermal motion broadens shells, it does not change "
-        "coordination in a close-packed ionic crystal.")
+caption("Left: the running coordination number of Na — Cl neighbours within a cutoff radius, "
+        "averaged over the 108 Na atoms — for the refined box and the truth: a plateau at 6 "
+        "across the whole first shell (the histogram at 3.2 Å is a single bar, 6 : 108), the "
+        "step to 14 at the next Cl shell (4.88 Å) and the rise into the 24 at 6.3 Å. Right: the first-shell bond-length distribution, r²-weighted "
+        "from the Na–Cl partial, with its mean and width for both boxes.")
 check("every Na keeps six Cl neighbours in the refined box", hist == {6: 108}, str(hist))
 check("the mean Na–Cl bond length is the truth's within 0.01 Å", abs(d_mean - t_mean) < 0.01, f"{d_mean:.3f} vs {t_mean:.3f} Å")
 check("the bond-length width is the truth's within 30 %", abs(d_std - t_std) < 0.3 * t_std, f"{d_std:.3f} vs {t_std:.3f} Å")

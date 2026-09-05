@@ -228,9 +228,9 @@
    "heading": "Coordination numbers and bond lengths",
    "cell": 5,
    "figure": 22,
-   "caption": "Coordination-number histogram of the refined NaCl box: every one of the 108 Na atoms keeps its six Cl neighbours — thermal motion broadens shells, it does not change coordination in a close-packed ionic crystal.",
-   "sha256": "e118c4c1e5b63a3161be5f9db0af2aacf2d59a7938224a6fb00c85ed0223460b",
-   "bytes": 15267
+   "caption": "Left: the running coordination number of Na — Cl neighbours within a cutoff radius, averaged over the 108 Na atoms — for the refined box and the truth: a plateau at 6 across the whole first shell (the histogram at 3.2 Å is a single bar, 6 : 108), the step to 14 at the next Cl shell (4.88 Å) and the rise into the 24 at 6.3 Å. Right: the first-shell bond-length distribution, r²-weighted from the Na–Cl partial, with its mean and width for both boxes.",
+   "sha256": "6c84e6cdbed113414e100017be2434c4c6b88a74f12accf7d94cb243164fcea5",
+   "bytes": 49810
   },
   "s37-f1.png": {
    "chapter": "RMCProfile_09_Analysing_Configurations.ipynb",

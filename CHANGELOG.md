@@ -2,6 +2,12 @@
 
 All notable changes to rmcprofile-skill. Format: Keep a Changelog; versions: SemVer.
 
+## [0.5.2] — 2026-09-05
+
+### Changed
+- Chapter 9 §36 (book figure 22, course figure `s36-f1`): the coordination-number figure is now the running coordination number n(r) of Na against the cutoff radius for the fitted box and the truth (plateaus at 6 and 14), beside the r²-weighted Na–Cl bond-length distribution with mean and width — a single-bar histogram was a number, not a figure (Fabio's review).
+- README: "Honest comparison with neighbours" and "How it was built" with the CRediT table; the docs guard asserts both sections.
+
 ## [0.5.1] — 2026-09-05
 
 ### Changed

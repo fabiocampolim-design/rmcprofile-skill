@@ -106,10 +106,45 @@ reveal.js deck (`course/deck/index.html`), the same deck as a PDF
 chapter figures appears under its full notebook caption; every number on a
 slide was printed by a chapter cell.
 
+## Honest comparison with neighbours
+
+| If you want… | Use | Why not this |
+|---|---|---|
+| The program itself — fits of neutron and X-ray total scattering, Bragg profiles, EXAFS, magnetic and diffuse data | [RMCProfile](https://rmcprofile.ornl.gov/) 6.7.9 (closed-source, "AS IS and for non-profit making purposes") | This project drives a copy you install and contains nothing from it; it is the checker, the cross-check, the book and the course *around* the program, not a replacement. |
+| RMCProfile's own Python side tools | `rmc_tools`, `sofq_calib`, `topas4rmc` on conda channel `apw247` (GPL-2) | They are pinned to Python 3.7 and two are GUIs; `rmc_tools`' rmc6f reader agrees with ours on every shipped configuration and crashes on boxes under 100 atoms. This toolkit is a library with tests, on current Python, and reads both rmc6f layouts. |
+| A scriptable RMC engine to run real refinements | [fullrmc](https://github.com/bachiraoun/fullrmc) (AGPL-3.0) | `rmclite` is a teaching engine at ~1 900 moves/s on 64 atoms, built to be read and to equal RMCProfile's functions; fullrmc is built to be run, with a modular constraint system, but no Bragg-profile fitting. |
+| The small-box view of the same PDF data | [PDFgui / diffpy-CMI](https://github.com/diffpy) (BSD) | A handful of average-structure parameters instead of thousands of coordinates; this book's chapters 3 and 7 say when that stops being enough and reuse PDFgui's names (`Qdamp`, `Qbroad`) for the corrections it measures. |
+| Diffuse scattering from disordered crystals, or liquids and glasses with empirical potentials | [DISCUS](https://github.com/tproffen/DiffuseCode), [Dissolve](https://github.com/disorderedmaterials/dissolve) (GPL-3.0) | Different routes to disorder (simulation and refinement, EPSR); RMCProfile ships an export to DISCUS. |
+| Reduction from raw scattering to F(Q) and G(r) | [ADDIE](https://github.com/neutrons/addie), Mantid, GudrunN/X, PDFgetX3 | This project synthesises its data with a known answer; it produces no reduced data and reads whatever those tools write in RMCProfile's conventions. |
+
 ## Roadmap
 
 The 6.8.0 release candidate through the cross-check, more exercises in the
 cross-check records, EXAFS χ(k) parsing, an F(Q) cross-check.
+
+## How it was built
+
+Written with Claude Code (Claude Fable 5.1) on 2026-09-04 and 2026-09-05 in a study repository
+that also holds the website survey, the package audit on both builds, the findings ledger
+(P-1..P-21), the GPL-tools audit, the literature run and the drafts for the mailing list: a
+foundation release (formats, checker, runner, analysis), a cross-check and teaching-engine
+release, the eleven-chapter book, the course, and the weekly watch — five plans executed inline,
+each merged and packed, then the publication pass. Effort ≈ 2 working days in one long session;
+the full transcript is kept by the author and available on request.
+
+| Role (CRediT) | Fabio Campolim | Claude |
+|---|---|---|
+| Conceptualization — the project ("a skill for RMCProfile the same way as kwant, pythtb, memristec"), the study-and-contribute shape, the clean-room rule | ● | ○ |
+| Methodology — the check-everything contract, the synthetic-truth design, measuring the program against its manual | ● | ● |
+| Software — toolkit, checker, runner, adapter, rmclite, notebook and course build tooling, watch script, tests | ○ | ● |
+| Validation — every chapter check, the cross-checks on both builds, the re-executions, CI | ○ | ● |
+| Investigation — package audit, upstream findings, GPL-tools audit, literature run, website survey | ○ | ● |
+| Writing – original draft — chapters, course, manual, references, drafts | ○ | ● |
+| Writing – review & editing — the decisions at every gate (admission, folder name, spec approval, "inline", "pin mine, go with all", "go public"), the figure and README review | ● | ○ |
+| Resources — the machine, both RMCProfile builds, the credentials; and the actions only a person may take (mailing list, sending drafts) | ● | ○ |
+
+CRediT is a taxonomy for human contributors; the author is the sole author of record and the
+table is the disclosure of what the assistant did.
 
 ## Licence
 
