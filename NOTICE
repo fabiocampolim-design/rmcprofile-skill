@@ -1,0 +1,29 @@
+rmcprofile-skill
+Copyright 2026 Fabio Campolim
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+    http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+
+This skill studies RMCProfile (https://rmcprofile.ornl.gov/), the Reverse
+Monte Carlo program for total scattering developed at ORNL, ISIS, Oxford,
+QMUL, NIST and Warsaw. It contains no code from that package: the file
+formats are implemented from the published manual, the analysis routines
+from the published method papers cited in references/method.md. The driver
+in scripts/rmcprofile_tools.py runs a copy of RMCProfile that you download
+and install yourself under its own terms
+("AS IS and for non-profit making purposes", https://rmcprofile.ornl.gov/disclaimer/);
+that copy and its tutorial files are never redistributed by this project.
+
+This project is independent and not affiliated with or endorsed by the
+RMCProfile developers, Oak Ridge National Laboratory, the ISIS Neutron and
+Muon Source (STFC), NIST, the University of Oxford, Queen Mary University of
+London or the University of Warsaw.

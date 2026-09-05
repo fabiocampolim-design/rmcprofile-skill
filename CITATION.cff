@@ -1,0 +1,56 @@
+cff-version: 1.2.0
+message: "If you use this skill, please cite it as below, and cite RMCProfile (Tucker et al. 2007; Zhang et al. 2020) for the program itself."
+title: "rmcprofile-skill: an AI-agent skill, verified toolkit and course on Reverse Monte Carlo modelling of total scattering data with RMCProfile"
+type: software
+version: "0.1.0"
+date-released: "2026-09-05"
+license: Apache-2.0
+authors:
+  - family-names: Campolim
+    given-names: Fabio
+keywords:
+  - reverse Monte Carlo
+  - total scattering
+  - pair distribution function
+  - RMCProfile
+  - AI-agent skill
+  - undergraduate course
+references:
+  - type: article
+    title: "RMCProfile: reverse Monte Carlo for polycrystalline materials"
+    authors:
+      - family-names: Tucker
+        given-names: Matthew G.
+      - family-names: Keen
+        given-names: David A.
+      - family-names: Dove
+        given-names: Martin T.
+      - family-names: Goodwin
+        given-names: Andrew L.
+      - family-names: Hui
+        given-names: Qun
+    journal: "Journal of Physics: Condensed Matter"
+    volume: 19
+    issue: 33
+    start: 335218
+    year: 2007
+    doi: 10.1088/0953-8984/19/33/335218
+  - type: article
+    title: "New capabilities for enhancement of RMCProfile: instrumental profiles with arbitrary peak shapes for structural refinements using the reverse Monte Carlo method"
+    authors:
+      - family-names: Zhang
+        given-names: Yuanpeng
+      - family-names: Eremenko
+        given-names: Maksim
+      - family-names: Krayzman
+        given-names: Victor
+      - family-names: Tucker
+        given-names: Matthew G.
+      - family-names: Levin
+        given-names: Igor
+    journal: "Journal of Applied Crystallography"
+    volume: 53
+    start: 1509
+    end: 1518
+    year: 2020
+    doi: 10.1107/S1600576720013254
