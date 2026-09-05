@@ -20,9 +20,14 @@ Usage (CLI):
 
 from __future__ import annotations
 
+import argparse
 import datetime as _dt
+import json
 import os
 import re
+import subprocess
+import sys
+import time
 from dataclasses import dataclass, field
 
 import numpy as np
@@ -127,7 +132,9 @@ def read_rmc6f(path):
     cfg.density = float(h["Number density (Ang^-3)"])
     cfg.cell = tuple(float(v) for v in h["Cell (Ang/deg)"].split())
     n_declared = int(h["Number of atoms"])
-    rows = [ln.split() for ln in lines[i + 1:] if ln.strip()]
+    # atom lines: "index label x y z [site ia ib ic]" (data2config) or
+    # "index label [1] x y z" (written by RMCProfile itself; the bracketed token is a flag we skip)
+    rows = [[t for t in ln.split() if not t.startswith("[")] for ln in lines[i + 1:] if ln.strip()]
     if len(rows) != n_declared:
         raise ValueError("%s: 'Number of atoms' says %d, file has %d atom lines" % (path, n_declared, len(rows)))
     if sum(cfg.counts) != n_declared:
@@ -368,9 +375,9 @@ def read_bragg(path):
     n, bank, scale, vol = lines[0].split()[:4]
     n, bank = int(n), int(bank)
     rows = [[_to_float(t) for t in ln.split()[:2]] for ln in lines[2:] if ln.strip() and _is_number(ln.split()[0])]
-    if len(rows) != n:
+    if len(rows) < n:
         raise ValueError("%s: header says %d points, file has %d" % (path, n, len(rows)))
-    arr = np.array(rows)
+    arr = np.array(rows[:n])           # RMCProfile reads exactly npoints rows; the package ships files with a few more
     return Bragg(n, bank, _to_float(scale), _to_float(vol), lines[1].strip(), arr[:, 0], arr[:, 1])
 
 
@@ -456,3 +463,358 @@ def read_partials_csv(path):
     header, arr = _read_csv_numeric(path)
     labels = header[1:]
     return arr[:, 0], {lab: arr[:, 1 + j] for j, lab in enumerate(labels)}
+
+
+# ----------------------------------------------------------------------------
+# input-set checker  (manual §3.2 checklist, §4.1, §5.6.1)
+# ----------------------------------------------------------------------------
+@dataclass
+class Finding:
+    level: str          # ERROR | WARN | INFO
+    code: str
+    message: str
+
+
+def check_input_set(stem, directory):
+    """Check every file RMCProfile will open for `stem` in `directory`."""
+    d = str(directory)
+    out = []
+    dat_path = os.path.join(d, stem + ".dat")
+    if not os.path.isfile(dat_path):
+        return [Finding("ERROR", "no-dat", "%s.dat not found in %s" % (stem, d))]
+    try:
+        dat = read_dat(dat_path)
+    except ValueError as e:
+        return [Finding("ERROR", "dat-parse", str(e))]
+
+    # configuration: .his6f is used in preference to .rmc6f unless IGNORE_HISTORY_FILE (§3.2)
+    his, rmc = os.path.join(d, stem + ".his6f"), os.path.join(d, stem + ".rmc6f")
+    cfg = None
+    if os.path.isfile(his) and "IGNORE_HISTORY_FILE" not in dat.scalars:
+        out.append(Finding("INFO", "history-file", "%s.his6f present: it will be used instead of the .rmc6f" % stem))
+    if os.path.isfile(rmc):
+        try:
+            cfg = read_rmc6f(rmc)
+        except ValueError as e:
+            out.append(Finding("ERROR", "rmc6f-parse", str(e)))
+    elif not os.path.isfile(his) and not os.path.isfile(os.path.join(d, stem + ".cfg")):
+        out.append(Finding("ERROR", "no-configuration", "no %s.rmc6f, .his6f or .cfg" % stem))
+
+    # atom order must agree between ATOMS :: and the configuration header (§4.1)
+    if cfg is not None and dat.atoms and cfg.atom_types != dat.atoms:
+        out.append(Finding("ERROR", "atom-order", "ATOMS :: %s but the configuration lists %s (same order required)"
+                           % (" ".join(dat.atoms), " ".join(cfg.atom_types))))
+
+    # MINIMUM_DISTANCES has one value per pair, pairs ordered AA AB AC BB BC CC (§4.1)
+    n = len(dat.atoms)
+    npairs = n * (n + 1) // 2
+    md = dat.minimum_distances()
+    if n and len(md) != npairs:
+        out.append(Finding("ERROR", "minimum-distances-count",
+                           "MINIMUM_DISTANCES has %d values, %d atom types need %d" % (len(md), n, npairs)))
+    mm = [float(v) for v in dat.scalars.get("MAXIMUM_MOVES", "").split() if _is_number(v)]
+    if n and mm and len(mm) != n:
+        out.append(Finding("ERROR", "maximum-moves-count", "MAXIMUM_MOVES has %d values for %d atom types" % (len(mm), n)))
+
+    # every data block names a file that exists and whose END_POINT is within the data
+    for b in dat.data_blocks():
+        fn = b.get("FILENAME")
+        if not fn:
+            out.append(Finding("ERROR", "data-block-no-filename", "%s has no FILENAME" % b.name))
+            continue
+        fp = os.path.join(d, fn)
+        if not os.path.isfile(fp):
+            out.append(Finding("ERROR", "data-file-missing", "%s: %s not found" % (b.name, fn)))
+            continue
+        if b.name == "EXAFS":
+            continue                                  # chi(k) files have their own layout (later plan)
+        try:
+            df = read_data_file(fp)
+        except (ValueError, IndexError) as e:
+            out.append(Finding("ERROR", "data-file-parse", "%s: %s" % (fn, e)))
+            continue
+        end = b.get("END_POINT")
+        if end and end.isdigit() and int(end) > len(df.x):
+            out.append(Finding("WARN", "end-point-beyond-data",
+                               "%s: END_POINT %s but %s has %d points (RMCProfile clamps to the data; the package's own smoke test does this)"
+                               % (b.name, end, fn, len(df.x))))
+        if b.get("WEIGHT") is None:
+            out.append(Finding("WARN", "no-weight", "%s: no WEIGHT (the manual's examples always set one)" % b.name))
+
+    # Bragg block needs .bragg + .inst (+ .back); hkl either as file or in the .dat (§4.13)
+    if any(b.name == "BRAGG" for b in dat.blocks):
+        for ext, code in ((".bragg", "bragg-file-missing"), (".inst", "bragg-inst-missing"), (".back", "bragg-back-missing")):
+            if not os.path.isfile(os.path.join(d, stem + ext)):
+                out.append(Finding("ERROR", code, "BRAGG :: block but %s%s is missing" % (stem, ext)))
+        bp = os.path.join(d, stem + ".bragg")
+        if os.path.isfile(bp):
+            try:
+                read_bragg(bp)
+            except (ValueError, IndexError) as e:
+                out.append(Finding("ERROR", "bragg-parse", str(e)))
+        if not os.path.isfile(os.path.join(d, stem + ".hkl")) and dat.get("BRAGG", "SUPERCELL") is None:
+            out.append(Finding("WARN", "hkl-range-unspecified", "no %s.hkl and no SUPERCELL :: in the BRAGG block" % stem))
+
+    # polyhedral restraint: the program waits forever for a missing .poly (audit 2026-09-05)
+    if any(b.name == "POLYHEDRAL_RESTRAINT" for b in dat.blocks) and not os.path.isfile(os.path.join(d, stem + ".poly")):
+        out.append(Finding("ERROR", "poly-file-missing",
+                           "POLYHEDRAL_RESTRAINT :: block but %s.poly is missing (RMCProfile waits for it indefinitely)" % stem))
+
+    # neighbour files must be deleted after a configuration change (§5.6.1)
+    for ext in (".neigh", ".neighlist"):
+        if os.path.isfile(os.path.join(d, stem + ext)):
+            out.append(Finding("WARN", "stale-neighbour-files", "%s%s present: delete it if the configuration changed" % (stem, ext)))
+
+    # potentials: bonds/triplets are regenerated if absent (§3.2) — info only
+    if any(b.name == "POTENTIALS" for b in dat.blocks):
+        for ext in (".bonds", ".triplets"):
+            if not os.path.isfile(os.path.join(d, stem + ext)):
+                out.append(Finding("INFO", "potential-lists-regenerated", "%s%s absent: RMCProfile will generate it" % (stem, ext)))
+
+    nerr = sum(1 for f in out if f.level == "ERROR")
+    out.append(Finding("INFO", "summary", "%s: %d data block(s), %d atom type(s), %d error(s)"
+                       % (stem, len(dat.data_blocks()), n, nerr)))
+    return out
+
+
+# ----------------------------------------------------------------------------
+# package locator and runner  (references/package.md — the setup scripts' contract)
+# ----------------------------------------------------------------------------
+@dataclass
+class Package:
+    home: str
+    platform: str        # "windows" | "linux"
+    binary: str
+    version_hint: str = ""
+
+
+def find_package(home=None):
+    """RMCProfile_package directory from `home` or $RMCPROFILE_HOME; None if absent."""
+    home = home or os.environ.get("RMCPROFILE_HOME")
+    if not home or not os.path.isdir(os.path.join(home, "exe")):
+        return None
+    win = os.path.join(home, "exe", "rmcprofile.exe")
+    lin = os.path.join(home, "exe", "rmcprofile")
+    if os.path.isfile(win):
+        return Package(home, "windows", win, _version_hint(home))
+    if os.path.isfile(lin):
+        return Package(home, "linux", lin, _version_hint(home))
+    return None
+
+
+def _version_hint(home):
+    """The version the package's own setup script announces (Linux: 'Welcome to RMCProfile version X')."""
+    p = os.path.join(home, "exe", "setup_cmds")
+    if os.path.isfile(p):
+        with open(p, encoding="utf-8", errors="replace") as f:
+            m = re.search(r"version\s+([\d.]+)", f.read())
+            if m:
+                return m.group(1)
+    return ""
+
+
+def package_env(pkg):
+    env = dict(os.environ)
+    exe = os.path.join(pkg.home, "exe")
+    if pkg.platform == "windows":
+        env["RMCPROFILE_DIR"] = pkg.home
+        env["PATH"] = os.pathsep.join([exe, os.path.join(exe, "cygwin_libs"), os.path.join(exe, "cuda_lib"), env.get("PATH", "")])
+    else:
+        libs = os.path.join(exe, "libs")
+        env.update({"RMCProfile_PATH": pkg.home, "PGPLOT_DIR": libs, "LD_LIBRARY_PATH": libs, "LIBRARY_PATH": libs})
+        env["PATH"] = os.pathsep.join([env.get("PATH", ""), exe])
+    return env
+
+
+@dataclass
+class RunResult:
+    returncode: int | None
+    seconds: float
+    log_path: str
+    outputs: list
+    final_chi2: dict | None
+
+
+def run_rmcprofile(stem, directory, pkg, timeout_min=None, log_name="run.log"):
+    """Run `rmcprofile <stem>` in `directory` with the package environment.
+    Stdout+stderr go to `log_name`; `outputs` lists files created or modified by
+    the run; `final_chi2` is the last row of <stem>.chi2 / <stem>_chi2.txt if
+    present. A timeout kills the process and returns returncode None."""
+    d = str(directory)
+    before = {f: os.path.getmtime(os.path.join(d, f)) for f in os.listdir(d)}
+    log_path = os.path.join(d, log_name)
+    t0 = time.time()
+    with open(log_path, "w", encoding="utf-8", errors="replace") as log:
+        try:
+            proc = subprocess.run([pkg.binary, stem], cwd=d, env=package_env(pkg), stdout=log, stderr=subprocess.STDOUT,
+                                  timeout=timeout_min * 60 if timeout_min else None)
+            rc = proc.returncode
+        except subprocess.TimeoutExpired:
+            rc = None
+    secs = time.time() - t0
+    outputs = sorted(f for f in os.listdir(d)
+                     if f != log_name and (f not in before or os.path.getmtime(os.path.join(d, f)) > before[f]))
+    final = None
+    for cand in (stem + ".chi2", stem + "_chi2.txt"):
+        p = os.path.join(d, cand)
+        if os.path.isfile(p):
+            hist = read_chi2_history(p)
+            if hist and len(next(iter(hist.values()))):
+                final = {k: (int(v[-1]) if v.dtype.kind == "i" else float(v[-1])) for k, v in hist.items()}
+            break
+    return RunResult(rc, secs, log_path, outputs, final)
+
+
+# ----------------------------------------------------------------------------
+# audit log (rule 12), selftest, CLI (rule 11)
+# ----------------------------------------------------------------------------
+def write_audit_log(log_dir, argv, ok, checks=None, extra=None):
+    os.makedirs(log_dir, exist_ok=True)
+    stamp = _dt.datetime.now().strftime("%Y%m%dT%H%M%S%f")
+    rec = {"tool": "rmcprofile_tools", "version": __version__, "timestamp": stamp, "argv": list(argv),
+           "ok": bool(ok), "checks": checks or [], **(extra or {})}
+    path = os.path.join(log_dir, "rmcprofile_tools_%s.json" % stamp)
+    with open(path, "w", encoding="utf-8") as f:
+        json.dump(rec, f, indent=2)
+    return path
+
+
+def selftest(outdir):
+    """Round-trip every format on synthetic files written into `outdir`."""
+    os.makedirs(outdir, exist_ok=True)
+    checks = []
+
+    def rec(name, ok, detail=""):
+        checks.append({"name": name, "ok": bool(ok), "detail": detail})
+
+    cfg = Rmc6f(atom_types=["Na", "Cl"], counts=[4, 4], cell=(5.64, 5.64, 5.64, 90, 90, 90), lattice=5.64 * np.eye(3),
+                supercell=(1, 1, 1), density=8 / 5.64 ** 3,
+                atoms=np.array(["Na"] * 4 + ["Cl"] * 4, dtype=object),
+                frac=np.array([[0, 0, 0], [.5, .5, 0], [.5, 0, .5], [0, .5, .5],
+                               [.5, 0, 0], [0, .5, 0], [0, 0, .5], [.5, .5, .5]], float),
+                site=np.arange(1, 9), cellidx=np.zeros((8, 3), int))
+    p = os.path.join(outdir, "selftest.rmc6f")
+    cfg.write(p)
+    back = read_rmc6f(p)
+    rec("rmc6f round trip", back.n_atoms() == 8 and np.allclose(back.frac, cfg.frac) and back.atom_types == ["Na", "Cl"])
+
+    x = np.arange(0.02, 10.0, 0.02)
+    y = np.sin(x)
+    q = os.path.join(outdir, "selftest_gr.dat")
+    write_data_file(q, x, y, "selftest")
+    df = read_data_file(q)
+    rec("data file round trip", np.allclose(df.x, x) and np.allclose(df.y, y))
+
+    dat = DatFile(scalars={"TITLE": "selftest", "NUMBER_DENSITY": "%.6f Angstrom^(-3)" % cfg.density,
+                           "MINIMUM_DISTANCES": "3.5 2.4 3.5 Angstrom", "MAXIMUM_MOVES": "0.05 0.05 Angstrom",
+                           "R_SPACING": "0.0200 Angstrom", "TIME_LIMIT": "1.00 MINUTES", "SAVE_PERIOD": "0.5 MINUTES"},
+                  atoms=["Na", "Cl"])
+    dat.order = [("scalar", k) for k in dat.scalars] + [("atoms",)]
+    dat.blocks.append(DatBlock("NEUTRON_REAL_SPACE_DATA", "1",
+                               [("FILENAME", "selftest_gr.dat"), ("DATA_TYPE", "G(r)"), ("FIT_TYPE", "G(r)"),
+                                ("START_POINT", "1"), ("END_POINT", "400"), ("WEIGHT", "0.05")]))
+    dat.order.append(("block", 0))
+    dp = os.path.join(outdir, "selftest.dat")
+    dat.write(dp)
+    rd = read_dat(dp)
+    rec("dat round trip", rd.get("NEUTRON_REAL_SPACE_DATA", "END_POINT") == "400" and rd.atoms == ["Na", "Cl"])
+
+    findings = check_input_set("selftest", outdir)
+    rec("checker on a consistent set", not [f for f in findings if f.level == "ERROR"],
+        "; ".join("%s %s" % (f.level, f.code) for f in findings))
+
+    pkg = find_package()
+    rec("package located" if pkg else "package absent (RMCPROFILE_HOME unset) - skipped", True,
+        pkg.home if pkg else "")
+    return checks
+
+
+def _analysis_main(args, argv):        # replaced by the analysis task
+    print("analysis commands arrive in the next task")
+    return 2
+
+
+def build_parser():
+    common = argparse.ArgumentParser(add_help=False)          # accepted before or after the subcommand
+    common.add_argument("--outdir", default="out", help="where outputs and selftest files are written")
+    common.add_argument("--log-dir", default="logs", help="where the JSON audit log is written")
+    common.add_argument("-q", "--quiet", action="store_true", help="print only the verdict")
+    ap = argparse.ArgumentParser(prog="rmcprofile_tools", description=__doc__.splitlines()[0], parents=[common])
+    ap.add_argument("--version", action="version", version="rmcprofile-skill %s" % __version__)
+    ap.add_argument("--selftest", action="store_true", help="round-trip every format on synthetic files and exit 0/1")
+    sub = ap.add_subparsers(dest="cmd")
+    c = sub.add_parser("check", help="check an RMCProfile input set", parents=[common])
+    c.add_argument("stem")
+    c.add_argument("--dir", default=".", help="directory holding the input set")
+    r = sub.add_parser("run", help="run rmcprofile <stem> with the package found through --home / RMCPROFILE_HOME",
+                       parents=[common])
+    r.add_argument("stem")
+    r.add_argument("--dir", default=".", help="directory holding the input set")
+    r.add_argument("--home", default=None, help="RMCProfile_package directory (default: $RMCPROFILE_HOME)")
+    r.add_argument("--timeout", type=float, default=None, help="kill the run after this many minutes")
+    p = sub.add_parser("pdf", help="partial g(r), G(r) and F(Q) from a .rmc6f configuration", parents=[common])
+    p.add_argument("rmc6f")
+    p.add_argument("--rmax", type=float, default=20.0, help="largest r of the partials (must be below half the shortest cell edge)")
+    p.add_argument("--dr", type=float, default=0.02, help="r step (Angstrom)")
+    p.add_argument("--qmax", type=float, default=30.0, help="largest Q of F(Q) (1/Angstrom)")
+    p.add_argument("--dq", type=float, default=0.02, help="Q step")
+    p.add_argument("--radiation", choices=["neutron", "xray"], default="neutron", help="weights for G(r)")
+    k = sub.add_parser("coord", help="coordination-number histogram for a pair within --rmax", parents=[common])
+    k.add_argument("rmc6f")
+    k.add_argument("--pair", nargs=2, required=True, metavar=("A", "B"), help="central atom type A, neighbour type B")
+    k.add_argument("--rmax", type=float, required=True, help="neighbour cutoff (Angstrom)")
+    a = sub.add_parser("angles", help="B-A-C bond-angle distribution with A-B, A-C within --rmax", parents=[common])
+    a.add_argument("rmc6f")
+    a.add_argument("--triplet", nargs=3, required=True, metavar=("A", "B", "C"), help="apex A, arms B and C")
+    a.add_argument("--rmax", type=float, required=True, help="bond cutoff (Angstrom)")
+    a.add_argument("--dangle", type=float, default=2.0, help="histogram bin (degrees)")
+    return ap
+
+
+def main(argv=None):
+    argv = list(sys.argv[1:] if argv is None else argv)
+    args = build_parser().parse_args(argv)
+    if args.selftest:
+        checks = selftest(args.outdir)
+        ok = all(c["ok"] for c in checks)
+        if not args.quiet:
+            for c in checks:
+                print("[%s] %s%s" % ("PASS" if c["ok"] else "FAIL", c["name"], (" - " + c["detail"]) if c["detail"] else ""))
+        write_audit_log(args.log_dir, argv, ok, checks)
+        print("rmcprofile_tools selftest: %s" % ("ALL CHECKS PASSED" if ok else "FAILED"))
+        return 0 if ok else 1
+    if args.cmd == "check":
+        findings = check_input_set(args.stem, args.dir)
+        for f in findings:
+            print("%s %s: %s" % (f.level, f.code, f.message))
+        ok = not any(f.level == "ERROR" for f in findings)
+        write_audit_log(args.log_dir, argv, ok, [{"name": f.code, "ok": f.level != "ERROR", "detail": f.message} for f in findings])
+        return 0 if ok else 1
+    if args.cmd == "run":
+        pkg = find_package(args.home)
+        if pkg is None:
+            print("ERROR: no RMCProfile package: pass --home or set RMCPROFILE_HOME to the RMCProfile_package directory")
+            return 2
+        findings = check_input_set(args.stem, args.dir)
+        errors = [f for f in findings if f.level == "ERROR"]
+        if errors:
+            for f in errors:
+                print("ERROR %s: %s" % (f.code, f.message))
+            print("not started: fix the input set first")
+            return 1
+        res = run_rmcprofile(args.stem, args.dir, pkg, timeout_min=args.timeout)
+        print("rmcprofile %s: rc=%s, %.1f s, %d output file(s), log %s"
+              % (args.stem, res.returncode, res.seconds, len(res.outputs), res.log_path))
+        if res.final_chi2:
+            print("final: " + ", ".join("%s=%s" % kv for kv in res.final_chi2.items()))
+        write_audit_log(args.log_dir, argv, res.returncode == 0,
+                        extra={"package": pkg.home, "seconds": res.seconds, "outputs": res.outputs, "final_chi2": res.final_chi2})
+        return 0 if res.returncode == 0 else 1
+    if args.cmd in ("pdf", "coord", "angles"):
+        return _analysis_main(args, argv)
+    build_parser().print_help()
+    return 2
+
+
+if __name__ == "__main__":
+    sys.exit(main())

@@ -85,6 +85,26 @@ def test_crlf_file_reads_the_same(nacl_path, tmp_path):
     assert cfg.n_atoms() == 8 and cfg.atom_types == ["Na", "Cl"] and cfg.cellidx[7].tolist() == [0, 0, 0]
 
 
+def test_program_written_layout(tmp_path):
+    """RMCProfile's own output puts a bracketed flag after the label and no site
+    or cell columns: 'index label [1] x y z'; the header order also differs."""
+    head = HEADER.replace("Metadata date:        05-09-2026\n", "").replace(
+        "Number of prior configuration saves: 0\n", "Accumulated time (s) in running loop: 0.01\nNumber of prior configuration saves: 0\n")
+    body = "".join(f"{i+1:6d}   {el}  [1]  {x:.15f}  {y:.15f}  {z:.15f}\n" for i, (el, x, y, z, _) in enumerate(ATOMS))
+    p = tmp_path / "prog.rmc6f"
+    p.write_text(head + body, encoding="utf-8")
+    cfg = rt.read_rmc6f(p)
+    assert cfg.n_atoms() == 8 and cfg.frac[1].tolist() == pytest.approx([0.5, 0.5, 0.0])
+    assert cfg.site.tolist() == [0] * 8 and cfg.header["Accumulated time (s) in running loop"] == "0.01"
+
+
+def test_bragg_with_extra_rows_keeps_npoints(tmp_path):
+    """The package's ex_1 .bragg says 1180 points and carries 1184 rows."""
+    (tmp_path / "s.bragg").write_text("2    3    42.949    204.0963\nsf6 190k\n6.988141\t1.2862\n6.993734\t1.2865\n6.999328\t1.2869\n", encoding="utf-8")
+    b = rt.read_bragg(tmp_path / "s.bragg")
+    assert b.npoints == 2 and len(b.x) == 2 and b.x[1] == pytest.approx(6.993734)
+
+
 def test_rejects_atom_count_mismatch(nacl_path, tmp_path):
     bad = tmp_path / "bad.rmc6f"
     bad.write_text(nacl_path.read_text(encoding="utf-8").replace("Number of atoms:                     8",
