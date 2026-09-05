@@ -17,5 +17,12 @@
       },
       "provenance": "RMCProfile 6.7.9.5 Windows Serial (CUDA) and Linux 64 (CPU), 2026-09-05, TIME_LIMIT 0; the package computes in single precision (~1e-5 relative), so the absolute tolerance is 1e-3 on partials that peak near 20"
     }
+  },
+  "rmclite": {
+    "ex_1": {
+      "partials_tolerance": 0.001,
+      "gofr_tolerance": 0.0001,
+      "note": "rmclite.Histogram vs _PDFpartials.csv / _PDF1.csv on the shipped smoke-test configuration; measured 2.8e-4 / 2.8e-5 (single precision in the package), 2026-09-05"
+    }
   }
 }
