@@ -1,6 +1,6 @@
 # rmcprofile-skill — User Manual
 
-Version 0.5.4. A Python toolkit, AI-agent skill, a clean-room teaching engine
+Version 0.5.5. A Python toolkit, AI-agent skill, a clean-room teaching engine
 and (from later releases) chapter notebooks and a course on Reverse Monte Carlo modelling of total
 scattering data with [RMCProfile](https://rmcprofile.ornl.gov/).
 
@@ -162,7 +162,7 @@ difference from the package's own `_PDFpartials.csv` and `_PDF1.csv`. The
 verdict compares them with `tests/records/crosscheck_v1.json`:
 `tolerance_partials` 1e-3 (the package computes in single precision; measured
 2.8e-4 on the tallest SF6 peak) and `tolerance_gofr` 1e-4 barn (measured
-3e-5). `--update-records` rewrites the measured maxima and the provenance
+3e-5). `--update-records` (exit codes: 0 within tolerance, 1 outside, 2 no package, 3 = no record for the exercise yet) rewrites the measured maxima and the provenance
 line — use it only after a deliberate re-measurement. Common flags:
 `--outdir`, `--log-dir`, `-q` / `--quiet`, `--version`. Exit 0 within
 tolerance, 1 outside, 2 without a package.

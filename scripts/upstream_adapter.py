@@ -12,7 +12,8 @@ Usage:
     python scripts/upstream_adapter.py list
     python scripts/upstream_adapter.py crosscheck ex_1 [--home HOME] [--workdir DIR] [--timeout MIN] [--update-records]
     python scripts/upstream_adapter.py --selftest
-Exit 0 when every compared quantity is within tolerance, 1 otherwise, 2 without a package.
+Exit 0 when every compared quantity is within tolerance, 1 otherwise, 2 without a package,
+3 when the exercise has no record yet (run with --update-records to add it).
 """
 
 from __future__ import annotations
@@ -99,14 +100,41 @@ def crosscheck_partials(rmc6f, partials_csv):
     return {lab: float(np.max(np.abs(ours[lab] - theirs[lab]))) for lab in theirs}
 
 
-def crosscheck_gofr(rmc6f, pdf_csv):
-    """max |G_ours - G_theirs| (barn) against the 'RMC' column of _PDF1.csv / _GofR.csv."""
+def _fit_type(dat_path):
+    """FIT_TYPE (else DATA_TYPE) of the first real-space data block of a .dat, 'G(r)' by default."""
+    if not dat_path or not os.path.isfile(dat_path):
+        return "G(r)"
+    dat = rt.read_dat(dat_path)
+    for b in dat.blocks:
+        if b.name.endswith("REAL_SPACE_DATA"):
+            return (b.get("FIT_TYPE") or b.get("DATA_TYPE") or "G(r)").strip()
+    return "G(r)"
+
+
+def crosscheck_gofr(rmc6f, pdf_csv, dat_path=None):
+    """max |ours - theirs| against the 'RMC' column of _PDF1.csv / _GofR.csv, in the function
+    the exercise fits: G(r) (barn), D(r) = 4 pi r rho G(r) or T(r) = D(r) + 4 pi r rho (sum c b)^2
+    (Keen 2001), read from the .dat's FIT_TYPE (0.5.5: the SnO exercise fits D(r) and read 3.6
+    'in G(r)' — 4e-5 in D(r))."""
     cfg = rt.read_rmc6f(rmc6f)
     x, calc, _ = rt.read_csv_pair(pdf_csv)
     dr = float(np.round(np.diff(x).mean(), 6))
     r, parts = rt.partial_gr(cfg, rmax=x[-1] + 1e-9, dr=dr)
     _, G = rt.total_gr(r, parts, cfg)
-    return float(np.max(np.abs(G - calc)))
+    # the PDF column starts where the data start (SnO: r = 1.40 A), not at r = dr: pick our
+    # values on the CSV's own points, r_k = k dr -> index k - 1 (0.5.5, ex_7)
+    k = np.round(x / dr).astype(int)
+    if k.min() < 1 or k.max() > len(r) or not np.allclose(r[k - 1], x, atol=1e-6):
+        raise ValueError("grid mismatch: CSV r from %.3f to %.3f step %.4f is not on r_k = k dr" % (x[0], x[-1], dr))
+    ours = G[k - 1]
+    kind = _fit_type(dat_path).upper().replace(" ", "")
+    if kind.startswith("D(R)") or kind.startswith("T(R)"):
+        ours = 4 * np.pi * x * cfg.density * ours
+        if kind.startswith("T(R)"):
+            n = float(sum(cfg.counts))
+            sum_cb = sum(k_ / n * rt.NEUTRON_B[t] for t, k_ in zip(cfg.atom_types, cfg.counts))
+            ours = ours + 4 * np.pi * x * cfg.density * (sum_cb ** 2) * rt.BARN_PER_FM2
+    return float(np.max(np.abs(ours - calc)))
 
 
 def run_and_crosscheck(pkg, name, workdir, timeout_min=None):
@@ -117,10 +145,16 @@ def run_and_crosscheck(pkg, name, workdir, timeout_min=None):
     cfg_path = os.path.join(workdir, ex.stem + ".rmc6f")
     parts_csv = os.path.join(workdir, ex.stem + "_PDFpartials.csv")
     pdf_csv = os.path.join(workdir, ex.stem + "_PDF1.csv")
-    if os.path.isfile(parts_csv):
-        out["partials"] = crosscheck_partials(cfg_path, parts_csv)
-    if os.path.isfile(pdf_csv):
-        out["gofr"] = crosscheck_gofr(cfg_path, pdf_csv)
+    # a configuration our reader refuses (the shipped GaPO4 neutron start declares 576 atoms and
+    # holds 575, P-22) is a finding to report, not a traceback that ends the audit (0.5.5)
+    try:
+        if os.path.isfile(parts_csv):
+            out["partials"] = crosscheck_partials(cfg_path, parts_csv)
+        if os.path.isfile(pdf_csv):
+            out["gofr"] = crosscheck_gofr(cfg_path, pdf_csv, os.path.join(workdir, ex.stem + ".dat"))
+            out["gofr_type"] = _fit_type(os.path.join(workdir, ex.stem + ".dat"))
+    except ValueError as exc:
+        out["error"] = str(exc)
     return out
 
 
@@ -136,10 +170,19 @@ def save_records(rec):
 
 
 def within_tolerance(result, rec):
+    """True/False against the exercise's record; None when there is no record for it (an
+    exercise never recorded is not a failure — 0.5.5, after every exercise but ex_1 read
+    'False' on the 6.8.0-rc.1 audit). G(r) is compared only when the run produced a PDF
+    column (an X-ray-only exercise has none)."""
     e = rec["exercises"].get(result["exercise"])
-    if e is None or not result["partials"] or result["gofr"] is None:
+    if e is None:
+        return None
+    if result.get("error") or not result["partials"]:
         return False
-    return max(result["partials"].values()) <= e["tolerance_partials"] and result["gofr"] <= e["tolerance_gofr"]
+    ok = max(result["partials"].values()) <= e["tolerance_partials"]
+    if result["gofr"] is not None:
+        ok = ok and result["gofr"] <= e["tolerance_gofr"]
+    return ok
 
 
 def _audit(log_dir, argv, ok, extra):
@@ -233,15 +276,17 @@ def main(argv=None):
                                              res["final_chi2"].get("chi2") if res["final_chi2"] else "n/a"))
             for lab, v in res["partials"].items():
                 print("  partial %-6s max|diff| = %.2e" % (lab, v))
-            print("  G(r)          max|diff| = %s" % ("%.2e" % res["gofr"] if res["gofr"] is not None else "n/a"))
-            print("  within tolerance: %s (work dir %s)" % (ok, work))
-        if args.update_records and res["partials"] and res["gofr"] is not None:
+            print("  %-13s max|diff| = %s" % (res.get("gofr_type", "G(r)"), "%.2e" % res["gofr"] if res["gofr"] is not None else "n/a"))
+            if res.get("error"):
+                print("  reader error: %s" % res["error"])
+            print("  within tolerance: %s (work dir %s)" % ("no record for this exercise (add it with --update-records)" if ok is None else ok, work))
+        if args.update_records and res["partials"]:
             e = rec["exercises"].setdefault(args.exercise, {"stem": res["stem"], "tolerance_partials": 1e-3, "tolerance_gofr": 1e-4})
             e["measured"] = {"partials": res["partials"], "gofr": res["gofr"]}
             e["provenance"] = "RMCProfile %s %s build, %s" % (pkg.version_hint or "6.7.9", pkg.platform, _dt.date.today().isoformat())
             save_records(rec)
-        _audit(args.log_dir, argv, ok, {"result": res, "workdir": work})
-        return 0 if ok else 1
+        _audit(args.log_dir, argv, bool(ok), {"result": res, "workdir": work})
+        return 3 if ok is None else (0 if ok else 1)
     build_parser().print_help()
     return 2
 

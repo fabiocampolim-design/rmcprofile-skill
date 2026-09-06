@@ -714,6 +714,24 @@ def _min_image_distances(cfg):
     return r
 
 
+def _distance_blocks(cfg, rows, cols, block=1000):
+    """Minimum-image distances between atoms `rows` and atoms `cols`, yielded in row blocks of
+    at most `block` atoms (a block x len(cols) array; a pair of one atom with itself is inf).
+    partial_gr uses this instead of the full N x N matrix: on the 14 000-atom SF6 exercise
+    that matrix needed 4.4 GB (N-9, 6.8.0-rc.1 audit) and the histogram never needs it whole."""
+    frac = cfg.frac - np.floor(cfg.frac)
+    fc = frac[cols]
+    for start in range(0, len(rows), block):
+        sel = rows[start:start + block]
+        d = frac[sel][:, None, :] - fc[None, :, :]
+        d -= np.round(d)
+        r = np.sqrt(((d @ cfg.lattice) ** 2).sum(-1))
+        same = sel[:, None] == cols[None, :]
+        if same.any():
+            r[same] = np.inf
+        yield r
+
+
 def rmc_grid(rmax, dr):
     """RMCProfile's r grid: r_k = k*dr (k >= 1) up to rmax, bins centred on r_k."""
     n = int(np.floor(rmax / dr + 1e-9))
@@ -737,7 +755,6 @@ def partial_gr(cfg, rmax=20.0, dr=0.02, grid="rmcprofile"):
         edges = np.arange(0.0, rmax + dr, dr)[: len(r) + 1]
     else:
         raise ValueError("grid must be 'rmcprofile' or 'centre'")
-    dist = _min_image_distances(cfg)
     V = abs(np.linalg.det(cfg.lattice))
     types = cfg.atom_types
     idx = {t: np.where(cfg.atoms == t)[0] for t in types}
@@ -745,8 +762,10 @@ def partial_gr(cfg, rmax=20.0, dr=0.02, grid="rmcprofile"):
     shell = 4 * np.pi * r ** 2 * dr
     for i, a in enumerate(types):
         for b in types[i:]:
-            block = dist[np.ix_(idx[a], idx[b])]
-            h, _ = np.histogram(block[np.isfinite(block)], bins=edges)
+            h = np.zeros(len(r), dtype=np.int64)
+            for block in _distance_blocks(cfg, idx[a], idx[b]):
+                hb, _ = np.histogram(block[np.isfinite(block)], bins=edges)
+                h += hb
             n_a, n_b = len(idx[a]), len(idx[b])
             out["%s-%s" % (a, b)] = h / (n_a * (n_b / V) * shell)
     return r, out

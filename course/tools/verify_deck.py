@@ -18,7 +18,7 @@ import argparse
 import os
 import sys
 
-__version__ = "0.5.4"
+__version__ = "0.5.5"
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 COURSE = os.path.abspath(os.path.join(HERE, ".."))

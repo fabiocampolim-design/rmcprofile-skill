@@ -16,6 +16,76 @@
         "gofr": 2e-05
       },
       "provenance": "RMCProfile 6.7.9.5 Windows Serial (CUDA) and Linux 64 (CPU), 2026-09-05, TIME_LIMIT 0; the package computes in single precision (~1e-5 relative), so the absolute tolerance is 1e-3 on partials that peak near 20"
+    },
+    "ex_6_xray": {
+      "stem": "gapo4_xray",
+      "tolerance_partials": 0.001,
+      "tolerance_gofr": 0.0001,
+      "measured": {
+        "partials": {
+          "Ga-Ga": 1.089170384016569e-05,
+          "Ga-P": 4.243577915019614e-05,
+          "Ga-O": 8.539542649721454e-05,
+          "P-P": 1.1919317097763837e-05,
+          "P-O": 0.00019857317608007463,
+          "O-O": 1.7947004793406052e-05
+        },
+        "gofr": null
+      },
+      "provenance": "RMCProfile 6.7.9 windows build, 2026-09-06"
+    },
+    "ex_4_5K": {
+      "stem": "srtio3_5k",
+      "tolerance_partials": 0.001,
+      "tolerance_gofr": 0.0001,
+      "measured": {
+        "partials": {
+          "Sr-Sr": 2.9026408228105538e-05,
+          "Sr-Ti": 6.7552056432163e-05,
+          "Sr-O": 5.62910157668739e-05,
+          "Ti-Ti": 2.2883890304470356e-05,
+          "Ti-O": 0.00013810536798963824,
+          "O-O": 3.981889016024809e-05
+        },
+        "gofr": 1.028800961133669e-05
+      },
+      "provenance": "RMCProfile 6.7.9 windows build, 2026-09-06"
+    },
+    "ex_3": {
+      "stem": "rmcsf6_190k",
+      "tolerance_partials": 0.001,
+      "tolerance_gofr": 0.0001,
+      "measured": {
+        "partials": {
+          "S-S": 4.404945067371102e-06,
+          "S-F": 0.00035764644889724195,
+          "F-F": 4.149763968008813e-05
+        },
+        "gofr": 3.2016906440168746e-05
+      },
+      "provenance": "RMCProfile 6.7.9 windows build, 2026-09-06"
+    },
+    "ex_7": {
+      "stem": "snao",
+      "tolerance_partials": 0.001,
+      "tolerance_gofr": 0.0001,
+      "measured": {
+        "partials": {
+          "Sr-Sr": 1.571719047532838e-05,
+          "Sr-Nb": 4.839890855379281e-05,
+          "Sr-Al": 4.776255694594056e-05,
+          "Sr-O": 3.7160923440637816e-05,
+          "Nb-Nb": 2.264402002793986e-05,
+          "Nb-Al": 4.486845738682632e-05,
+          "Nb-O": 0.00014383010407215124,
+          "Al-Al": 1.6841431909497828e-05,
+          "Al-O": 0.00014464877917497176,
+          "O-O": 2.805196537636334e-05
+        },
+        "gofr": 4.016690797081779e-05
+      },
+      "provenance": "RMCProfile 6.7.9 windows build, 2026-09-06",
+      "gofr_type": "D(r)"
     }
   },
   "rmclite": {

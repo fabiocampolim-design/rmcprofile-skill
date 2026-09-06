@@ -35,7 +35,7 @@ check passes; the two package checks are `[SKIP]` without a package.
 |---|---|
 | global | `--version`, `--selftest` (cross-check our own `pdf` output against itself, exact), `--outdir`, `--log-dir`, `-q` / `--quiet` |
 | `list` | none — prints the eight exercises with their staging recipes |
-| `crosscheck` EXERCISE (`ex_1` … `ex_7`) | `--home` (package directory), `--workdir` (scratch dir, default a fresh temp dir), `--timeout` (minutes), `--update-records` (rewrite the measured maxima and provenance in `tests/records/crosscheck_v1.json`) |
+| `crosscheck` EXERCISE (`ex_1` … `ex_7`) | `--home` (package directory), `--workdir` (scratch dir, default a fresh temp dir), `--timeout` (minutes), `--update-records` (records exit 0 within tolerance, 1 outside, 2 no package, 3 no record for the exercise yet) (rewrite the measured maxima and provenance in `tests/records/crosscheck_v1.json`) |
 
 Exit 0 within tolerance, 1 outside, 2 without a package. Audit log
 `logs/upstream_adapter_<stamp>.json`. The records file (`schema` 1) holds

@@ -107,3 +107,25 @@ def test_pdf_subcommand_writes_csvs(tmp_path):
     rc = rt.main(["angles", str(p), "--triplet", "Na", "Cl", "Cl", "--rmax", "3.0", "--outdir", str(tmp_path / "out"),
                   "--log-dir", str(tmp_path / "logs"), "-q"])
     assert rc == 0 and (tmp_path / "out" / "nacl_angles_Cl-Na-Cl.csv").is_file()
+
+
+def test_partial_gr_in_blocks_equals_the_full_matrix():
+    """0.5.5: partial_gr histograms row blocks instead of the N x N distance matrix (4.4 GB on
+    the 14 000-atom SF6 exercise); the counts must be identical, block size notwithstanding."""
+    cfg = nacl(3)
+    rng = np.random.default_rng(3)
+    cfg.frac = (cfg.frac + rng.normal(0, 0.01, cfg.frac.shape)) % 1.0
+    r, ref = rt.partial_gr(cfg, rmax=8.0, dr=0.02)
+    dist = rt._min_image_distances(cfg)
+    idx = {t: np.where(cfg.atoms == t)[0] for t in cfg.atom_types}
+    _, edges = rt.rmc_grid(8.0, 0.02)
+    for lab, g in ref.items():
+        a, b = lab.split("-")
+        block = dist[np.ix_(idx[a], idx[b])]
+        h, _ = np.histogram(block[np.isfinite(block)], bins=edges)
+        V = abs(np.linalg.det(cfg.lattice))
+        full = h / (len(idx[a]) * (len(idx[b]) / V) * 4 * np.pi * r ** 2 * 0.02)
+        assert np.allclose(full, g, rtol=1e-12, atol=0), lab      # same counts; only the float association differs
+    small = list(rt._distance_blocks(cfg, idx["Na"], idx["Na"], block=7))
+    assert sum(x.shape[0] for x in small) == len(idx["Na"]) and small[0].shape == (7, len(idx["Na"]))
+    assert np.isinf(small[0][np.arange(7), np.arange(7)]).all()          # an atom with itself is never a pair

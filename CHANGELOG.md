@@ -2,6 +2,16 @@
 
 All notable changes to rmcprofile-skill. Format: Keep a Changelog; versions: SemVer.
 
+## [0.5.5] — 2026-09-06
+
+### Changed
+- `partial_gr` histograms row blocks of the minimum-image distances instead of building the full N × N × 3 array (4.4 GB on the 14 000-atom SF6 exercise); the counts are identical (`tests/test_analysis.py`).
+- `upstream_adapter crosscheck`: an exercise without a record now says so and exits 3 (it read "within tolerance: False" — every exercise but ex_1 did on the 6.8.0-rc.1 audit); G(r) is compared only when the run produced a PDF column (X-ray-only exercises have none); a configuration the reader refuses is reported as an error row, not a traceback; `--update-records` accepts partials-only results; the PDF column is compared in the function the exercise fits (`FIT_TYPE`: G(r), D(r) = 4πrρG or T(r)) and on the CSV's own r points (the SnO exercise fits D(r) from r = 1.40 Å: 4e-5 in D(r), 3.6 barn read as G(r)).
+- `tests/records/crosscheck_v1.json` now holds ex_1, ex_3, ex_4_5K, ex_6_xray and ex_7, measured on 6.7.9 (Windows build).
+
+### Found (study repository, `docs/02`)
+- 6.8.0-rc.1: PDF outputs equal 6.7.9's to the last digit on every exercise that ran; the new Bragg pipeline allocates 1.6 MB per reflection and stops on the GaPO4 X-ray and SrTiO3 exercises when the memory is not there (P-23); the shipped GaPO4 neutron start file is one atom short (P-22).
+
 ## [0.5.4] — 2026-09-05
 
 ### Changed

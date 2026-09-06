@@ -2,7 +2,7 @@ cff-version: 1.2.0
 message: "If you use this skill, please cite it as below, and cite RMCProfile (Tucker et al. 2007; Zhang et al. 2020) for the program itself."
 title: "rmcprofile-skill: an AI-agent skill, verified toolkit and course on Reverse Monte Carlo modelling of total scattering data with RMCProfile"
 type: software
-version: "0.5.4"
+version: "0.5.5"
 date-released: "2026-09-05"
 license: Apache-2.0
 authors:
